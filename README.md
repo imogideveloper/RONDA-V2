@@ -1,4 +1,4 @@
-# Ronda
+# Ronda-App
 
 Aplikasi manajemen RT/RW — iuran, kas, pengumuman, surat, dan layanan warga.
 
