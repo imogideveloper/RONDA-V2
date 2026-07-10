@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "RT OS Indonesia",
+    "slug": "ronda-rn",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "rtos",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#ECFDF5"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "id.rtos.app"
+    },
+    "android": {
+      "package": "id.rtos.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#ECFDF5"
+      }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-asset"
+    ]
+  }
+}
