@@ -5,6 +5,9 @@ import { supabase } from '../config/supabase';
 const ANNOUNCEMENT_BUCKET = 'announcement-images';
 const PROFILE_AVATAR_BUCKET = 'profile-avatars';
 const IURAN_PROOF_BUCKET = 'iuran-payment-proofs';
+const RT_ASSETS_BUCKET = 'rt-assets';
+
+export type RtAssetKind = 'kop' | 'signature' | 'qris';
 
 export interface PickedImage {
   uri: string;
@@ -81,5 +84,20 @@ export const storageService = {
       .upload(path, buffer, { contentType: contentTypeOf(ext), upsert: false });
     if (error) throw error;
     return supabase.storage.from(IURAN_PROOF_BUCKET).getPublicUrl(path).data.publicUrl;
+  },
+
+  // Aset setting RT (kop surat, tanda tangan, QRIS). Bucket 'rt-assets',
+  // path {rtId}/{kind}.ext, upsert (satu file per jenis per RT).
+  async uploadRtAsset(rtId: string, kind: RtAssetKind, file: PickedImage): Promise<string> {
+    const ext = extensionOf(file.fileName ?? file.uri);
+    const path = `${rtId}/${kind}.${ext}`;
+    const buffer = await toArrayBuffer(file.uri);
+    const { error } = await supabase.storage
+      .from(RT_ASSETS_BUCKET)
+      .upload(path, buffer, { contentType: contentTypeOf(ext), upsert: true });
+    if (error) throw error;
+    // cache-bust karena upsert memakai path yang sama
+    const base = supabase.storage.from(RT_ASSETS_BUCKET).getPublicUrl(path).data.publicUrl;
+    return `${base}?t=${Date.now()}`;
   },
 };

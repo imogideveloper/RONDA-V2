@@ -1,7 +1,7 @@
 // Port dari lib/pages/pengumuman/announcement_detail_page.dart
 import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors } from '../../config/theme';
@@ -23,7 +23,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.appbar}>
-        <Ionicons
+        <Icon
           name="arrow-back"
           size={24}
           color={colors.emerald}
@@ -45,7 +45,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: Props) {
         {hasEvent && (
           <WargaCard style={{ marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="calendar" size={22} color={colors.emerald} />
+              <Icon name="calendar" size={22} color={colors.emerald} />
               <View style={{ marginLeft: 10 }}>
                 <Text style={wargaText.labelCaps}>Tanggal kegiatan</Text>
                 <Text style={[wargaText.sectionTitle, { fontSize: 16 }]}>
@@ -81,13 +81,13 @@ function MetaRow({
   label,
   value,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   value: string;
 }) {
   return (
     <View style={{ flexDirection: 'row' }}>
-      <Ionicons name={icon} size={20} color={colors.emerald} />
+      <Icon name={icon} size={20} color={colors.emerald} />
       <View style={{ marginLeft: 10, flex: 1 }}>
         <Text style={wargaText.labelCaps}>{label}</Text>
         <Text style={[wargaText.sectionTitle, { fontSize: 14 }]}>{value}</Text>

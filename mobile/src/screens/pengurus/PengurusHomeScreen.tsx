@@ -1,7 +1,7 @@
 // Port dari lib/pages/tabs/home_tab.dart + ketua_rt_home_view.dart + bendahara_home_view.dart
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -185,7 +185,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
               <View style={{ height: 16 }} />
               <WargaCard>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Ionicons name="information-circle-outline" size={22} color={wargaColors.primaryGreen} />
+                  <Icon name="information-circle-outline" size={22} color={wargaColors.primaryGreen} />
                   <Text style={[wargaText.greeting, { fontSize: 13, flex: 1, marginLeft: 10 }]}>
                     {belumBayar} tagihan warga belum lunas bulan ini.
                   </Text>

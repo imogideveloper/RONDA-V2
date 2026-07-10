@@ -2,7 +2,7 @@
 // Bottom nav warga: Beranda, Iuran, Info, Profil. (Iuran/Info/Profil = placeholder tahap ini.)
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, wargaColors } from '../../config/theme';
 import { Profile, RtUnit } from '../../types/models';
@@ -47,7 +47,7 @@ export function WargaMainShell({ profile, rt, onLogout, onChanged }: Props) {
             const active = i === index;
             return (
               <Pressable key={t.key} style={styles.navItem} onPress={() => setIndex(i)}>
-                <Ionicons
+                <Icon
                   name={active ? t.icon : (`${t.icon}-outline` as any)}
                   size={24}
                   color={active ? colors.emerald : colors.textHint}
@@ -67,7 +67,7 @@ export function WargaMainShell({ profile, rt, onLogout, onChanged }: Props) {
 function Placeholder({ label, onLogout }: { label: string; onLogout?: () => void }) {
   return (
     <View style={styles.placeholder}>
-      <Ionicons name="construct-outline" size={40} color={colors.textHint} />
+      <Icon name="construct-outline" size={40} color={colors.textHint} />
       <Text style={styles.placeholderText}>Tab "{label}" akan diport di tahap berikutnya.</Text>
       {onLogout ? (
         <Text style={styles.logout} onPress={onLogout}>

@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_beranda_widgets.dart (komponen inti Beranda Warga).
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { colors, radius, softShadow, wargaColors, formatRupiah } from '../../config/theme';
 
 // ── Header sapaan + avatar + lonceng notifikasi ──────────────────────
@@ -38,7 +38,7 @@ export function WargaBerandaHeader({
         <Text style={styles.roleLine}>{roleRtLine}</Text>
       </View>
       <Pressable onPress={onNotifTap} style={styles.bell} hitSlop={8}>
-        <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
+        <Icon name="notifications-outline" size={22} color={colors.textPrimary} />
         {notifCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{notifCount > 9 ? '9+' : notifCount}</Text>
@@ -74,7 +74,7 @@ export function WargaTotalTagihanCard({
         </Text>
       </View>
       <View style={styles.tagihanIcon}>
-        <Ionicons name={lunas ? 'checkmark-done' : 'wallet'} size={26} color="#fff" />
+        <Icon name={lunas ? 'checkmark-done' : 'wallet'} size={26} color="#fff" />
       </View>
     </Pressable>
   );
@@ -128,7 +128,7 @@ function StatTile({
   sub,
   onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   tint: string;
   label: string;
   value: string;
@@ -138,7 +138,7 @@ function StatTile({
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.statTile, pressed && { opacity: 0.9 }]}>
       <View style={[styles.statIcon, { backgroundColor: tint + '1A' }]}>
-        <Ionicons name={icon} size={18} color={tint} />
+        <Icon name={icon} size={18} color={tint} />
       </View>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue} numberOfLines={1}>
@@ -235,7 +235,7 @@ function AksiItem({
   badge,
   onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   tint: string;
   bg: string;
   label: string;
@@ -245,7 +245,7 @@ function AksiItem({
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.aksiItem, pressed && { opacity: 0.85 }]}>
       <View style={[styles.aksiIcon, { backgroundColor: bg }]}>
-        <Ionicons name={icon} size={24} color={tint} />
+        <Icon name={icon} size={24} color={tint} />
         {badge != null && badge > 0 && (
           <View style={styles.aksiBadge}>
             <Text style={styles.aksiBadgeText}>{badge > 9 ? '9+' : badge}</Text>
@@ -262,13 +262,13 @@ export function WargaDaruratBanner({ onTap }: { onTap?: () => void }) {
   return (
     <Pressable onPress={onTap} style={({ pressed }) => [styles.darurat, pressed && { opacity: 0.9 }]}>
       <View style={styles.daruratIcon}>
-        <Ionicons name="call" size={20} color="#fff" />
+        <Icon name="call" size={20} color="#fff" />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.daruratTitle}>Kontak Darurat</Text>
         <Text style={styles.daruratSub}>Ketua RT, Bendahara, & nomor penting</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.danger} />
+      <Icon name="chevron-forward" size={20} color={colors.danger} />
     </Pressable>
   );
 }
@@ -294,7 +294,7 @@ export function WargaPapanInfoHeader({
 // ── Strip papan info ─────────────────────────────────────────────────
 export interface PapanStripProps {
   accentColor: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   iconBg: string;
   iconColor: string;
   badge: string;
@@ -311,7 +311,7 @@ export function WargaPapanInfoStrip(p: PapanStripProps) {
     <Pressable onPress={p.onTap} style={({ pressed }) => [styles.strip, pressed && { opacity: 0.9 }]}>
       <View style={[styles.stripAccent, { backgroundColor: p.accentColor }]} />
       <View style={[styles.stripIcon, { backgroundColor: p.iconBg }]}>
-        <Ionicons name={p.icon} size={20} color={p.iconColor} />
+        <Icon name={p.icon} size={20} color={p.iconColor} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <View style={styles.stripTopRow}>

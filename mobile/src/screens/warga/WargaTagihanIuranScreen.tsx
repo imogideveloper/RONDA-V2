@@ -1,7 +1,7 @@
 // Port dari lib/pages/warga/warga_tagihan_iuran_page.dart
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
@@ -132,7 +132,7 @@ export default function WargaTagihanIuranScreen({ route, navigation }: Props) {
     <SafeAreaView edges={['top']} style={styles.safe}>
       <View style={styles.appbar}>
         <Pressable onPress={goBack} hitSlop={8} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={18} color={colors.textPrimary} />
+          <Icon name="chevron-back" size={18} color={colors.textPrimary} />
         </Pressable>
         <Text style={[wargaText.sectionTitle, { flex: 1, textAlign: 'center' }]}>{title}</Text>
         <View style={{ width: 34 }} />
@@ -250,7 +250,7 @@ export default function WargaTagihanIuranScreen({ route, navigation }: Props) {
                 <Hero />
                 <View style={{ height: 32, alignItems: 'center' }} />
                 <View style={styles.successIcon}>
-                  <Ionicons name="checkmark-circle" size={48} color={wargaColors.primaryGreen} />
+                  <Icon name="checkmark-circle" size={48} color={wargaColors.primaryGreen} />
                 </View>
                 <Text style={[wargaText.sectionTitle, { fontSize: 22, textAlign: 'center', marginTop: 16 }]}>
                   Bukti Terkirim!
@@ -304,7 +304,7 @@ function ListStep({
         <>
           <View style={{ height: 20 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <Ionicons name="time-outline" size={18} color="#EA580C" />
+            <Icon name="time-outline" size={18} color="#EA580C" />
             <Text style={[wargaText.sectionTitle, { color: '#EA580C' }]}>Menunggu Verifikasi</Text>
           </View>
           {awaiting.map((b) => <WargaMenungguVerifikasiCard key={b.id} bill={b} />)}
@@ -332,7 +332,7 @@ function ListStep({
           return (
             <View key={yg.year}>
               <Pressable onPress={() => onToggleYear(yg.year)} style={styles.yearHead}>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textPrimary} />
+                <Icon name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textPrimary} />
                 <Text style={styles.yearText}>{yg.year}</Text>
                 <View style={styles.yearBadge}>
                   <Text style={styles.yearBadgeText}>{bills.length} tagihan</Text>
@@ -369,7 +369,7 @@ function PaymentDetail({ method, rtLabel, rtName, total }: { method: PayMethod; 
       <WargaCard>
         <View style={{ alignItems: 'center' }}>
           <View style={styles.qrBox}>
-            <Ionicons name="qr-code" size={120} color={wargaColors.primaryGreen} />
+            <Icon name="qr-code" size={120} color={wargaColors.primaryGreen} />
           </View>
           <Text style={[wargaText.sectionTitle, { fontSize: 14, marginTop: 12 }]}>{rtLabel}</Text>
           <Text style={wargaText.greeting}>{formatRupiah(total)}</Text>
@@ -385,7 +385,7 @@ function PaymentDetail({ method, rtLabel, rtName, total }: { method: PayMethod; 
       <WargaCard>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.trfIcon}>
-            <Ionicons name="card" size={22} color="#185FA5" />
+            <Icon name="card" size={22} color="#185FA5" />
           </View>
           <View style={{ marginLeft: 10 }}>
             <Text style={[wargaText.sectionTitle, { fontSize: 14 }]}>Transfer Bank BRI</Text>
@@ -402,7 +402,7 @@ function PaymentDetail({ method, rtLabel, rtName, total }: { method: PayMethod; 
   return (
     <View style={[styles.cashCard]}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="cash" size={28} color="#BA7517" />
+        <Icon name="cash" size={28} color="#BA7517" />
         <Text style={[wargaText.sectionTitle, { color: '#92400E', marginLeft: 10 }]}>Pembayaran Tunai</Text>
       </View>
       <Text style={[wargaText.greeting, { marginTop: 8, lineHeight: 20 }]}>

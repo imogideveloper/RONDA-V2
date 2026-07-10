@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_detail_widgets.dart (subset yang dipakai halaman warga)
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { IuranRecord, KasTransaction, Profile, RtUnit, kasDateLabel, profileIsBendahara, profileIsKetua, profileRoleLabel } from '../../types/models';
 import { iuranPaidSubtitle, iuranPeriodTitle } from '../../lib/period';
@@ -13,7 +13,7 @@ export function WargaPageSummaryDarkCard({ saldo, totalKeluar }: { saldo: number
     <View style={styles.darkCard}>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="wallet-outline" size={16} color="rgba(255,255,255,0.7)" />
+          <Icon name="wallet-outline" size={16} color="rgba(255,255,255,0.7)" />
           <Text style={styles.darkKicker}>SALDO KAS RT</Text>
         </View>
         <Text style={styles.darkSaldo}>{formatRupiah(saldo)}</Text>
@@ -31,7 +31,7 @@ export function WargaEmergencyBannerCard({ rtLine }: { rtLine: string }) {
   return (
     <View style={styles.emergency}>
       <View style={styles.emergencyIcon}>
-        <Ionicons name="alert-circle" size={28} color="#fff" />
+        <Icon name="alert-circle" size={28} color="#fff" />
       </View>
       <View style={{ flex: 1, marginLeft: 14 }}>
         <Text style={styles.emergencyTitle}>Hubungi Pengurus RT</Text>
@@ -76,10 +76,10 @@ export function WargaPengurusContactCard({
   );
 }
 
-function ContactBtn({ icon, color, onTap }: { icon: keyof typeof Ionicons.glyphMap; color: string; onTap: () => void }) {
+function ContactBtn({ icon, color, onTap }: { icon: IconName; color: string; onTap: () => void }) {
   return (
     <Pressable onPress={onTap} style={({ pressed }) => [styles.contactBtn, { borderColor: color + '73' }, pressed && { opacity: 0.7 }]}>
-      <Ionicons name={icon} size={20} color={color} />
+      <Icon name={icon} size={20} color={color} />
     </Pressable>
   );
 }
@@ -89,7 +89,7 @@ export function WargaKontribusiHeroCard({ total, bulanCount }: { total: number; 
     <View style={styles.kontribusiHero}>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="wallet-outline" size={18} color="rgba(255,255,255,0.9)" />
+          <Icon name="wallet-outline" size={18} color="rgba(255,255,255,0.9)" />
           <Text style={styles.kontribusiKicker}>TOTAL KONTRIBUSI</Text>
         </View>
         <Text style={styles.kontribusiTotal}>{formatRupiah(total)}</Text>
@@ -98,7 +98,7 @@ export function WargaKontribusiHeroCard({ total, bulanCount }: { total: number; 
         </Text>
       </View>
       <View style={styles.kontribusiIcon}>
-        <Ionicons name="checkmark" size={28} color="#fff" />
+        <Icon name="checkmark" size={28} color="#fff" />
       </View>
     </View>
   );
@@ -108,7 +108,7 @@ export function WargaPaidIuranCard({ record }: { record: IuranRecord }) {
   return (
     <View style={[wargaCardStyle(16), styles.paidCard]}>
       <View style={styles.paidIcon}>
-        <Ionicons name="checkmark" size={22} color={wargaColors.primaryGreen} />
+        <Icon name="checkmark" size={22} color={wargaColors.primaryGreen} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.paidTitle}>{iuranPeriodTitle(record)}</Text>
@@ -148,7 +148,7 @@ export function WargaYearExpansionTile({
           </Text>
         </View>
         <Text style={[styles.trailing, { color: trailingColor, flex: 1, textAlign: 'right' }]}>{trailingAmount}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} style={{ marginLeft: 6 }} />
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} style={{ marginLeft: 6 }} />
       </Pressable>
       {open && <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>{children}</View>}
     </View>
@@ -175,7 +175,7 @@ export function WargaMonthExpansionTile({
         <Text style={[styles.monthTitle, { flex: 1 }]}>{monthTitle}</Text>
         <Text style={styles.countLabel}>{itemCount === 1 ? '1 transaksi' : `${itemCount} transaksi`}</Text>
         <Text style={[styles.trailing, { color: trailingColor, fontSize: 13, marginLeft: 8 }]}>{trailingAmount}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} style={{ marginLeft: 6 }} />
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} style={{ marginLeft: 6 }} />
       </Pressable>
       {open && <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>{children}</View>}
     </View>
@@ -184,7 +184,7 @@ export function WargaMonthExpansionTile({
 
 export function WargaKasTransactionCard({ tx }: { tx: KasTransaction }) {
   const c = (tx.category ?? tx.description).toLowerCase();
-  let icon: keyof typeof Ionicons.glyphMap = 'card';
+  let icon: IconName = 'card';
   let color = '#D97706';
   let bg = '#FFFBEB';
   let label = 'OPERASIONAL';
@@ -196,7 +196,7 @@ export function WargaKasTransactionCard({ tx }: { tx: KasTransaction }) {
   return (
     <View style={styles.kasCard}>
       <View style={[styles.kasIcon, { backgroundColor: bg }]}>
-        <Ionicons name={icon} size={22} color={color} />
+        <Icon name={icon} size={22} color={color} />
       </View>
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.kasDesc}>{tx.description}</Text>
@@ -204,7 +204,7 @@ export function WargaKasTransactionCard({ tx }: { tx: KasTransaction }) {
         {tx.recorderName ? <Text style={styles.kasRecorder}>Dicatat: {tx.recorderName}</Text> : null}
       </View>
       <View style={{ alignItems: 'flex-end' }}>
-        <Ionicons name="arrow-down-outline" size={14} color={colors.danger} />
+        <Icon name="arrow-down-outline" size={14} color={colors.danger} />
         <Text style={styles.kasAmount}>{formatRupiah(tx.amount)}</Text>
       </View>
     </View>

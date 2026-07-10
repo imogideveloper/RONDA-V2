@@ -1,12 +1,12 @@
 // Port dari WargaLayananSuratItem (lib/widgets/warga_beranda_widgets.dart)
-import { Ionicons } from '@expo/vector-icons';
+import type { IconName } from '../components/Icon';
 import { wargaColors } from '../config/theme';
 
 export interface SuratItem {
   title: string;
   sla: string;
   description: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   iconColor: string;
   iconBg: string;
   accentColor: string;

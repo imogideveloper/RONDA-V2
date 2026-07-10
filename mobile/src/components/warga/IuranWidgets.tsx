@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_iuran_widgets.dart
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import * as Clipboard from 'expo-clipboard';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { IuranRecord, iuranIsAwaiting, iuranIsPaid, iuranPaymentMethodLabel } from '../../types/models';
@@ -19,7 +19,7 @@ interface StatusUi {
   subtitle: string;
   accent: string;
   accentBg: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }
 
 export function iuranStatusFromBill(bill: IuranRecord | null): StatusUi {
@@ -77,7 +77,7 @@ export function WargaIuranHeroSection({
       {rtSwitcher ? <View style={{ marginTop: 14 }}>{rtSwitcher}</View> : null}
       <View style={styles.statusCard}>
         <View style={[styles.statusIcon, { backgroundColor: status.accentBg }]}>
-          <Ionicons name={status.icon} size={26} color={status.accent} />
+          <Icon name={status.icon} size={26} color={status.accent} />
         </View>
         <View style={{ flex: 1, marginLeft: 14 }}>
           <Text style={styles.statusKicker}>STATUS IURAN</Text>
@@ -128,7 +128,7 @@ export function WargaIuranQrisCard({
   return (
     <Pressable onPress={onScan} style={({ pressed }) => [styles.qris, pressed && { opacity: 0.9 }]}>
       <View style={styles.qrisIcon}>
-        <Ionicons name="qr-code" size={28} color="#fff" />
+        <Icon name="qr-code" size={28} color="#fff" />
       </View>
       <View style={{ flex: 1, marginLeft: 14 }}>
         <Text style={styles.qrisTitle}>Bayar via QRIS</Text>
@@ -155,7 +155,7 @@ export function WargaIuranVirtualAccountCard({
   return (
     <View style={[wargaCardStyle(16), { padding: 18 }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="business" size={22} color="#2563EB" />
+        <Icon name="business" size={22} color="#2563EB" />
         <Text style={styles.vaTitle}>Virtual Account Bank BRI</Text>
       </View>
       <View style={styles.vaBox}>
@@ -167,7 +167,7 @@ export function WargaIuranVirtualAccountCard({
             toast.success('Nomor VA disalin');
           }}
         >
-          <Ionicons name="copy-outline" size={20} color="#2563EB" />
+          <Icon name="copy-outline" size={20} color="#2563EB" />
         </Pressable>
       </View>
       <Text style={styles.vaName}>{accountName}</Text>
@@ -183,12 +183,12 @@ export function WargaIuranEwalletTile({
 }: {
   label: string;
   phone: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   color: string;
 }) {
   return (
     <View style={[wargaCardStyle(14), styles.ewallet]}>
-      <Ionicons name={icon} size={22} color={color} />
+      <Icon name={icon} size={22} color={color} />
       <Text style={styles.ewalletLabel}>{label}</Text>
       <Text style={styles.ewalletPhone} numberOfLines={1}>
         {phone}
@@ -208,7 +208,7 @@ export function WargaIuranHistoryCard({
   const awaiting = iuranIsAwaiting(record);
   const title = iuranPeriodTitle(record);
 
-  let iconBg: string, iconColor: string, icon: keyof typeof Ionicons.glyphMap;
+  let iconBg: string, iconColor: string, icon: IconName;
   let amountColor: string, subtitle: string, badge: string, badgeBg: string, badgeFg: string;
 
   if (paid) {
@@ -250,7 +250,7 @@ export function WargaIuranHistoryCard({
       style={({ pressed }) => [wargaCardStyle(14), styles.histCard, pressed && onPay ? { opacity: 0.9 } : null]}
     >
       <View style={[styles.histIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={22} color={iconColor} />
+        <Icon name={icon} size={22} color={iconColor} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.histTitle}>{title}</Text>
@@ -311,13 +311,13 @@ export function WargaIuranDownloadCard({
       style={({ pressed }) => [wargaCardStyle(14), styles.download, pressed && onTap ? { opacity: 0.9 } : null]}
     >
       <View style={styles.downloadIcon}>
-        <Ionicons name="receipt-outline" size={24} color="#2563EB" />
+        <Icon name="receipt-outline" size={24} color="#2563EB" />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.downloadTitle}>Download Bukti Bayar</Text>
         <Text style={styles.downloadSub}>Terakhir: {lastPaidLabel}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+      <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
     </Pressable>
   );
 }

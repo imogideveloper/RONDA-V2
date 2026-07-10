@@ -33,10 +33,11 @@ import {
   iuranIsUnpaid,
   iuranPaymentMethodLabel,
   rtDisplayLabel,
-  suratIsPending,
+  suratStatusLabel,
 } from '../../types/models';
 import { formatRupiah } from '../../config/theme';
 import { greetingByTime, formatDateShort, daysLateFromPeriodKey } from '../../lib/date';
+import { announcementActive, billActive, suratActive } from '../../lib/papanInfo';
 
 interface Props {
   profile: Profile;
@@ -153,7 +154,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
             Belum ada aktivitas. Cek tab Info untuk pengumuman RT.
           </Text>
         ) : (
-          strips.slice(0, 6).map((s, i) => <WargaPapanInfoStrip key={i} {...s} />)
+          strips.map((s, i) => <WargaPapanInfoStrip key={i} {...s} />)
         )}
       </ScrollView>
     </SafeAreaView>
@@ -177,7 +178,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
       });
     }
 
-    for (const bill of unpaid.slice(0, 2)) {
+    for (const bill of unpaid.filter(billActive)) {
       out.push({
         accentColor: '#F97316',
         icon: 'card-outline',
@@ -192,9 +193,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
       });
     }
 
-    const pendingSurat = data.mySuratRequests.filter(suratIsPending);
-    if (pendingSurat.length > 0) {
-      const s = pendingSurat[0];
+    for (const s of data.mySuratRequests.filter(suratActive)) {
       out.push({
         accentColor: wargaColors.primaryGreen,
         icon: 'home-outline',
@@ -203,13 +202,13 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
         badge: 'SURAT',
         badgeBg: wargaColors.lightGreen,
         badgeFg: wargaColors.primaryGreen,
-        metaRight: 'Menunggu',
+        metaRight: suratStatusLabel(s),
         title: s.suratType,
         subtitle: s.purpose.length > 0 ? s.purpose : 'Menunggu persetujuan RT',
       });
     }
 
-    for (const a of data.announcements.slice(0, 4)) {
+    for (const a of data.announcements.filter(announcementActive)) {
       out.push({
         accentColor: '#185FA5',
         icon: 'megaphone-outline',

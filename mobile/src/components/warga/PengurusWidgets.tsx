@@ -1,7 +1,7 @@
 // Port dari lib/widgets/ketua_rt_dashboard_widgets.dart + WargaPengumumanFeedCard/WargaEmptyState
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { Announcement, announcementCreatedLabel } from '../../types/models';
 import { categoryMetaFor } from '../../lib/announcementCategory';
@@ -53,7 +53,7 @@ function QuickTile({
   badge = 0,
   onTap,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   color: string;
   label: string;
   badge?: number;
@@ -62,7 +62,7 @@ function QuickTile({
   return (
     <Pressable onPress={onTap} style={({ pressed }) => [wargaCardStyle(14), styles.quickTile, pressed && { opacity: 0.9 }]}>
       <View style={[styles.quickIcon, { backgroundColor: color + '1F' }]}>
-        <Ionicons name={icon} size={26} color={color} />
+        <Icon name={icon} size={26} color={color} />
         {badge > 0 && (
           <View style={styles.quickBadge}>
             <Text style={styles.quickBadgeText}>{badge > 9 ? '9+' : badge}</Text>
@@ -80,7 +80,7 @@ export function WargaPengumumanFeedCard({ item, onTap }: { item: Announcement; o
   return (
     <Pressable onPress={onTap} style={({ pressed }) => [wargaCardStyle(16), styles.feed, pressed && { opacity: 0.9 }]}>
       <View style={[styles.feedIcon, { backgroundColor: cat.bg }]}>
-        <Ionicons name={cat.icon} size={22} color={cat.color} />
+        <Icon name={cat.icon} size={22} color={cat.color} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -100,13 +100,13 @@ export function WargaEmptyState({
   icon = 'file-tray-outline',
   message,
 }: {
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: IconName;
   message: string;
 }) {
   return (
     <View style={{ alignItems: 'center', paddingVertical: 32 }}>
       <View style={styles.emptyIcon}>
-        <Ionicons name={icon} size={36} color={wargaColors.primaryGreen} />
+        <Icon name={icon} size={36} color={wargaColors.primaryGreen} />
       </View>
       <Text style={[wargaText.greeting, { fontSize: 14, textAlign: 'center', marginTop: 14 }]}>{message}</Text>
     </View>

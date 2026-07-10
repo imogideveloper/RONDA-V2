@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radius } from '../config/theme';
@@ -141,7 +141,7 @@ export default function LoginScreen({ navigation }: Props) {
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
-            <Ionicons name="people-circle" size={92} color={colors.emerald} />
+            <Icon name="people-circle" size={92} color={colors.emerald} />
           </View>
           <Text style={styles.appTitle}>RT OS Indonesia</Text>
           <Text style={styles.appSubtitle}>
@@ -158,7 +158,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <Card color={colors.emeraldMuted} style={styles.infoCard}>
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Ionicons
+              <Icon
                 name={tab === 'phone' ? 'chatbox-ellipses-outline' : 'mail-outline'}
                 size={22}
                 color={colors.emeraldDark}
@@ -223,7 +223,7 @@ export default function LoginScreen({ navigation }: Props) {
       return (
         <View style={{ gap: 14 }}>
           <View style={styles.registerBanner}>
-            <Ionicons name="person-add-outline" size={22} color={colors.emeraldDark} />
+            <Icon name="person-add-outline" size={22} color={colors.emeraldDark} />
             <Text style={styles.registerBannerText}>
               Daftar akun baru — otomatis menjadi Warga RT
             </Text>

@@ -1,7 +1,7 @@
 // Port dari lib/pages/surat/surat_pengantar_page.dart
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radius, wargaColors } from '../../config/theme';
@@ -29,7 +29,7 @@ const TYPES = [
   'Surat Pengantar Nikah',
 ];
 
-export default function SuratPengantarScreen({ route }: Props) {
+export default function SuratPengantarScreen({ route, navigation }: Props) {
   const { profile, rt } = route.params;
   const toast = useToast();
   const isKetua = profileIsKetua(profile);
@@ -92,7 +92,7 @@ export default function SuratPengantarScreen({ route }: Props) {
           <Text style={styles.h}>Jenis Surat</Text>
           {TYPES.map((t) => (
             <Pressable key={t} onPress={() => setSelectedType(t)} style={[styles.radioRow, selectedType === t && styles.radioActive]}>
-              <Ionicons name={selectedType === t ? 'radio-button-on' : 'radio-button-off'} size={22} color={selectedType === t ? colors.emerald : colors.textSecondary} />
+              <Icon name={selectedType === t ? 'radio-button-on' : 'radio-button-off'} size={22} color={selectedType === t ? colors.emerald : colors.textSecondary} />
               <Text style={styles.radioLabel}>{t}</Text>
             </Pressable>
           ))}
@@ -131,6 +131,15 @@ export default function SuratPengantarScreen({ route }: Props) {
                   />
                 </View>
                 <Text style={[wargaText.greeting, { fontSize: 13, marginTop: 6 }]}>{r.purpose}</Text>
+                {isKetua && (
+                  <Pressable
+                    onPress={() => navigation.navigate('SuratDraft', { rt, request: r, ketuaName: profile.fullName })}
+                    style={[styles.actionBtn, { borderColor: colors.emerald, marginTop: 12 }]}
+                  >
+                    <Icon name="document-text-outline" size={18} color={colors.emerald} />
+                    <Text style={{ color: colors.emerald, fontWeight: '600', marginLeft: 6 }}>Lihat Draft Surat</Text>
+                  </Pressable>
+                )}
                 {isKetua && suratIsPending(r) && (
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                     <Pressable onPress={() => setStatus(r, 'rejected')} style={[styles.actionBtn, { borderColor: colors.danger }]}>
@@ -143,7 +152,7 @@ export default function SuratPengantarScreen({ route }: Props) {
                 )}
                 {suratIsApproved(r) && (
                   <Pressable onPress={() => toast.success('Unduh PDF — segera hadir')} style={[styles.actionBtn, { borderColor: colors.emerald, marginTop: 12 }]}>
-                    <Ionicons name="download-outline" size={18} color={colors.emerald} />
+                    <Icon name="download-outline" size={18} color={colors.emerald} />
                     <Text style={{ color: colors.emerald, fontWeight: '600', marginLeft: 6 }}>Unduh PDF (demo)</Text>
                   </Pressable>
                 )}

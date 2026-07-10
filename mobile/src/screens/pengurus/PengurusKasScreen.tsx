@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, formatRupiah, radius, wargaColors } from '../../config/theme';
 import { WargaCard, wargaText } from '../../components/warga/wargaUi';
@@ -90,7 +90,7 @@ export function PengurusKasScreen({ profile, rt }: Props) {
             trailing={
               canEdit ? (
                 <Pressable onPress={() => setAddOpen(true)} style={styles.addBtn}>
-                  <Ionicons name="add" size={22} color={wargaColors.primaryGreen} />
+                  <Icon name="add" size={22} color={wargaColors.primaryGreen} />
                 </Pressable>
               ) : undefined
             }
@@ -120,7 +120,7 @@ export function PengurusKasScreen({ profile, rt }: Props) {
           ) : (
             txs.map((t) => (
               <View key={t.id} style={[styles.row, wargaCardBorder]}>
-                <Ionicons name={kasIsIncome(t) ? 'checkmark-circle' : 'time-outline'} size={22} color={kasIsIncome(t) ? wargaColors.primaryGreen : wargaColors.dangerRed} />
+                <Icon name={kasIsIncome(t) ? 'checkmark-circle' : 'time-outline'} size={22} color={kasIsIncome(t) ? wargaColors.primaryGreen : wargaColors.dangerRed} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={styles.rowTitle}>{t.description}</Text>
                   <Text style={[wargaText.greeting, { fontSize: 12 }]}>{kasDateLabel(t)}</Text>

@@ -1,7 +1,7 @@
 // Port dari lib/pages/tabs/pengumuman_tab.dart
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -74,7 +74,7 @@ export function PengurusPengumumanScreen({ profile, rt, onChanged }: Props) {
               )}
               {canPost && (
                 <Pressable onPress={openCreate} style={styles.addBtn}>
-                  <Ionicons name="add" size={22} color={wargaColors.primaryGreen} />
+                  <Icon name="add" size={22} color={wargaColors.primaryGreen} />
                 </Pressable>
               )}
             </View>

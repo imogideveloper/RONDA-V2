@@ -7,6 +7,7 @@ import {
   KasTransaction,
   Profile,
   RtUnit,
+  SuratApplicant,
   SuratRequest,
   announcementFromMap,
   emptyKasSummary,
@@ -45,6 +46,36 @@ export const rtService = {
 
     const { data } = await supabase.from('rt_units').select().eq('id', rtId).maybeSingle();
     if (data == null) return null;
+    return rtUnitFromMap(data);
+  },
+
+  async getRtById(rtId: string): Promise<RtUnit | null> {
+    const { data } = await supabase.from('rt_units').select().eq('id', rtId).maybeSingle();
+    if (data == null) return null;
+    return rtUnitFromMap(data);
+  },
+
+  // Simpan setting RT (Ketua). Kolom role/rt_id tidak disentuh; policy
+  // "rt_update_ketua" (migrasi 001) mengizinkan Ketua meng-update RT-nya.
+  async updateRtSettings(
+    rtId: string,
+    payload: {
+      address?: string | null;
+      kop_surat_url?: string | null;
+      signature_url?: string | null;
+      qris_url?: string | null;
+      bank_name?: string | null;
+      bank_account_name?: string | null;
+      bank_account_number?: string | null;
+    },
+  ): Promise<RtUnit> {
+    const { data, error } = await supabase
+      .from('rt_units')
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq('id', rtId)
+      .select()
+      .single();
+    if (error) throw error;
     return rtUnitFromMap(data);
   },
 
@@ -332,13 +363,23 @@ export const rtService = {
     }
   },
 
-  async submitSuratRequest(rtId: string, suratType: string, purpose: string): Promise<void> {
+  async submitSuratRequest(
+    rtId: string,
+    suratType: string,
+    purpose: string,
+    applicant?: SuratApplicant,
+  ): Promise<void> {
     const userId = await currentUserId();
+    const clean = (s?: string) => (s && s.trim() !== '' ? s.trim() : null);
     const { error } = await supabase.from('surat_requests').insert({
       rt_id: rtId,
       user_id: userId,
       surat_type: suratType,
       purpose,
+      nik: clean(applicant?.nik),
+      birth_place: clean(applicant?.birthPlace),
+      birth_date: clean(applicant?.birthDate),
+      occupation: clean(applicant?.occupation),
     });
     if (error) throw error;
   },

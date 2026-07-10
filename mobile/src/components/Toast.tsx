@@ -1,7 +1,7 @@
 // Port ringan dari lib/config/app_toast.dart — toast sukses/error mengambang.
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from './Icon';
 import { colors, radius, softShadow } from '../config/theme';
 
 type ToastKind = 'success' | 'error';
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               { backgroundColor: toast.kind === 'error' ? colors.danger : colors.emeraldDark },
             ]}
           >
-            <Ionicons
+            <Icon
               name={toast.kind === 'error' ? 'alert-circle' : 'checkmark-circle'}
               size={20}
               color="#fff"

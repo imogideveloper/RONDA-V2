@@ -1,7 +1,8 @@
 // Port dari lib/pages/onboarding/onboarding_page.dart
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { confirmDialog } from '../../lib/dialog';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,16 +21,13 @@ export function OnboardingScreen({ profile, onDone, onLogout }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const confirmLogout = () =>
-    Alert.alert('Keluar dari akun?', 'Anda akan kembali ke halaman login.', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: onLogout },
-    ]);
+    confirmDialog('Keluar dari akun?', 'Anda akan kembali ke halaman login.', onLogout, 'Keluar');
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.illustration}>
-          <Ionicons name="people-circle" size={100} color={colors.emerald} />
+          <Icon name="people-circle" size={100} color={colors.emerald} />
         </View>
         <Text style={styles.hello}>Halo, {profile.fullName.split(' ')[0]}!</Text>
         <Text style={styles.sub}>Pilih cara bergabung dengan RT Anda</Text>
@@ -59,7 +57,7 @@ export function OnboardingScreen({ profile, onDone, onLogout }: Props) {
 
         <View style={{ height: 24 }} />
         <Pressable onPress={confirmLogout} style={styles.logout}>
-          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+          <Icon name="log-out-outline" size={20} color={colors.danger} />
           <Text style={styles.logoutText}>Keluar</Text>
         </Pressable>
       </ScrollView>
@@ -73,7 +71,7 @@ function OptionCard({
   desc,
   onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   title: string;
   desc: string;
   onPress: () => void;
@@ -81,13 +79,13 @@ function OptionCard({
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.option, pressed && { opacity: 0.9 }]}>
       <View style={styles.optionIcon}>
-        <Ionicons name={icon} size={28} color={colors.emerald} />
+        <Icon name={icon} size={28} color={colors.emerald} />
       </View>
       <View style={{ flex: 1, marginLeft: 16 }}>
         <Text style={styles.optionTitle}>{title}</Text>
         <Text style={styles.optionDesc}>{desc}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.textHint} />
+      <Icon name="chevron-forward" size={16} color={colors.textHint} />
     </Pressable>
   );
 }

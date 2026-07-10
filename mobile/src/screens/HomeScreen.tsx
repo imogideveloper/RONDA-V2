@@ -1,7 +1,7 @@
 // Port dari lib/pages/role_home_router.dart
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../components/Icon';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors } from '../config/theme';
 import { PrimaryButton } from '../components/Card';
@@ -62,7 +62,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (profile == null) {
     return (
       <View style={styles.center}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.danger} />
+        <Icon name="alert-circle-outline" size={48} color={colors.danger} />
         <Text style={styles.errTitle}>Profil tidak ditemukan</Text>
         {authService.lastProfileError ? (
           <Text style={styles.errDetail}>{authService.lastProfileError}</Text>

@@ -1,7 +1,7 @@
 // Port dari lib/pages/splash_page.dart
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../components/Icon';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, softShadow } from '../config/theme';
 import { authService } from '../services/authService';
@@ -32,7 +32,7 @@ export default function SplashScreen({ navigation }: Props) {
     <View style={styles.container}>
       <Animated.View style={{ opacity: fade, alignItems: 'center' }}>
         <View style={styles.logo}>
-          <Ionicons name="business" size={44} color="#fff" />
+          <Icon name="business" size={44} color="#fff" />
         </View>
         <Text style={styles.title}>RT OS</Text>
         <Text style={styles.subtitle}>Indonesia</Text>

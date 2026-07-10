@@ -1,6 +1,7 @@
 // Port dari lib/pages/onboarding/create_rt_page.dart
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { alertDialog } from '../../lib/dialog';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radius } from '../../config/theme';
@@ -32,15 +33,10 @@ export default function CreateRtScreen({ route, navigation }: Props) {
         rwNumber: rwNumber.trim() === '' ? null : rwNumber.trim(),
         address: address.trim() === '' ? null : address.trim(),
       });
-      Alert.alert('RT Berhasil Dibuat 🎉', `Kode undangan: ${result.invite_code ?? '-'}`, [
-        {
-          text: 'Lanjut',
-          onPress: () => {
-            onSuccess?.();
-            navigation.goBack();
-          },
-        },
-      ]);
+      alertDialog('RT Berhasil Dibuat 🎉', `Kode undangan: ${result.invite_code ?? '-'}`, () => {
+        onSuccess?.();
+        navigation.goBack();
+      });
     } catch (e: any) {
       toast.error(String(e?.message ?? 'Gagal membuat RT'));
     } finally {

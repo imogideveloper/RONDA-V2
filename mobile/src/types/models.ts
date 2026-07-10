@@ -55,6 +55,13 @@ export interface RtUnit {
   ketuaId: string;
   memberCount: number;
   createdAt: Date;
+  // Setting RT (diisi Ketua RT) — lihat migrasi 014_rt_settings.sql
+  kopSuratUrl: string | null;
+  signatureUrl: string | null;
+  qrisUrl: string | null;
+  bankName: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
 }
 
 export function rtUnitFromMap(map: Row): RtUnit {
@@ -68,6 +75,12 @@ export function rtUnitFromMap(map: Row): RtUnit {
     ketuaId: map.ketua_id as string,
     memberCount: (map.member_count as number) ?? 1,
     createdAt: new Date(map.created_at),
+    kopSuratUrl: (map.kop_surat_url as string) ?? null,
+    signatureUrl: (map.signature_url as string) ?? null,
+    qrisUrl: (map.qris_url as string) ?? null,
+    bankName: (map.bank_name as string) ?? null,
+    bankAccountName: (map.bank_account_name as string) ?? null,
+    bankAccountNumber: (map.bank_account_number as string) ?? null,
   };
 }
 
@@ -226,6 +239,11 @@ export interface SuratRequest {
   status: string;
   createdAt: Date;
   userName: string | null;
+  // Data pemohon (diisi warga saat mengajukan) — lihat migrasi 015
+  nik: string | null;
+  birthPlace: string | null;
+  birthDate: string | null;
+  occupation: string | null;
 }
 
 export function suratRequestFromMap(map: Row): SuratRequest {
@@ -237,7 +255,18 @@ export function suratRequestFromMap(map: Row): SuratRequest {
     status: map.status as string,
     createdAt: new Date(map.created_at),
     userName: profiles && typeof profiles === 'object' ? (profiles.full_name ?? null) : null,
+    nik: (map.nik as string) ?? null,
+    birthPlace: (map.birth_place as string) ?? null,
+    birthDate: (map.birth_date as string) ?? null,
+    occupation: (map.occupation as string) ?? null,
   };
+}
+
+export interface SuratApplicant {
+  nik?: string;
+  birthPlace?: string;
+  birthDate?: string;
+  occupation?: string;
 }
 
 export const suratIsPending = (s: SuratRequest): boolean => s.status === 'pending';

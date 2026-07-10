@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_info_widgets.dart
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { colors } from '../../config/theme';
 import { Announcement, announcementContentPreview } from '../../types/models';
 import {
@@ -30,7 +30,7 @@ export function WargaInfoHeroCard({
       <View style={{ flexDirection: 'row' }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="megaphone" size={16} color="rgba(255,255,255,0.92)" />
+            <Icon name="megaphone" size={16} color="rgba(255,255,255,0.92)" />
             <Text style={styles.heroKicker}>INFORMASI RT</Text>
           </View>
           <Text style={styles.heroBig}>{activeCount} Aktif</Text>
@@ -41,7 +41,7 @@ export function WargaInfoHeroCard({
           </Text>
         </View>
         <View style={styles.heroIcon}>
-          <Ionicons name="megaphone" size={32} color="#fff" />
+          <Icon name="megaphone" size={32} color="#fff" />
         </View>
       </View>
       <View style={styles.pillRow}>
@@ -53,10 +53,10 @@ export function WargaInfoHeroCard({
   );
 }
 
-function Pill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+function Pill({ icon, label }: { icon: IconName; label: string }) {
   return (
     <View style={styles.pill}>
-      <Ionicons name={icon} size={14} color="#fff" />
+      <Icon name={icon} size={14} color="#fff" />
       <Text style={styles.pillText} numberOfLines={1}>
         {label}
       </Text>
@@ -81,7 +81,7 @@ export function WargaInfoAnnouncementCard({
       style={({ pressed }) => [wargaCardStyle(16), styles.card, pressed && { opacity: 0.9 }]}
     >
       <View style={[styles.catIcon, { backgroundColor: cat.bg }]}>
-        <Ionicons name={cat.icon} size={22} color={cat.color} />
+        <Icon name={cat.icon} size={22} color={cat.color} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -98,12 +98,12 @@ export function WargaInfoAnnouncementCard({
           {announcementContentPreview(item)}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-          <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
+          <Icon name="person-outline" size={14} color={colors.textSecondary} />
           <Text style={styles.author} numberOfLines={1}>
             {announcementAuthorLabel(item)}
           </Text>
           <View style={[styles.dot, { backgroundColor: cat.dotColor }]} />
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
         </View>
       </View>
     </Pressable>

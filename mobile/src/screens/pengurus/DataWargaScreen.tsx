@@ -11,7 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -125,7 +125,7 @@ export default function DataWargaScreen({ route }: Props) {
         <WargaAppBarInline title="Data Warga" />
         {isKetua && (
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} style={styles.menuBtn}>
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.emerald} />
+            <Icon name="ellipsis-vertical" size={20} color={colors.emerald} />
           </Pressable>
         )}
       </View>
@@ -140,7 +140,7 @@ export default function DataWargaScreen({ route }: Props) {
       )}
 
       <View style={styles.searchWrap}>
-        <Ionicons name="search" size={20} color={colors.emerald} />
+        <Icon name="search" size={20} color={colors.emerald} />
         <TextInput
           style={styles.search}
           value={query}
@@ -180,7 +180,7 @@ export default function DataWargaScreen({ route }: Props) {
                     {m.blokRumah ? <Text style={{ fontSize: 12, color: colors.textHint }}>{m.blokRumah}</Text> : null}
                   </View>
                   <StatusChip label={directoryRoleLabel(m)} color={chipColor} />
-                  {editable && <Ionicons name="create-outline" size={18} color={colors.emerald} style={{ marginLeft: 4 }} />}
+                  {editable && <Icon name="create-outline" size={18} color={colors.emerald} style={{ marginLeft: 4 }} />}
                 </WargaCard>
               </Pressable>
             );
@@ -193,11 +193,11 @@ export default function DataWargaScreen({ route }: Props) {
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={styles.menu}>
             <Pressable style={styles.menuItem} onPress={downloadTemplate}>
-              <Ionicons name="download-outline" size={20} color={colors.emerald} />
+              <Icon name="download-outline" size={20} color={colors.emerald} />
               <Text style={styles.menuText}>Unduh template CSV</Text>
             </Pressable>
             <Pressable style={styles.menuItem} onPress={importCsv}>
-              <Ionicons name="cloud-upload-outline" size={20} color={colors.emerald} />
+              <Icon name="cloud-upload-outline" size={20} color={colors.emerald} />
               <Text style={styles.menuText}>Import data warga</Text>
             </Pressable>
           </View>

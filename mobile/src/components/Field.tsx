@@ -1,15 +1,15 @@
 // Input bergaya sesuai inputDecorationTheme di app_theme.dart
 import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from './Icon';
 import { colors, radius } from '../config/theme';
 
 interface Props extends TextInputProps {
   label?: string;
   hint?: string;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
+  leftIcon?: IconName;
   prefixText?: string;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: IconName;
   onRightPress?: () => void;
 }
 
@@ -29,7 +29,7 @@ export function Field({
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <View style={styles.box}>
         {leftIcon ? (
-          <Ionicons name={leftIcon} size={20} color={colors.emerald} style={{ marginRight: 8 }} />
+          <Icon name={leftIcon} size={20} color={colors.emerald} style={{ marginRight: 8 }} />
         ) : null}
         {prefixText ? <Text style={styles.prefix}>{prefixText}</Text> : null}
         <TextInput
@@ -39,7 +39,7 @@ export function Field({
         />
         {rightIcon ? (
           <Pressable onPress={onRightPress} hitSlop={8}>
-            <Ionicons name={rightIcon} size={20} color={colors.textSecondary} />
+            <Icon name={rightIcon} size={20} color={colors.textSecondary} />
           </Pressable>
         ) : null}
       </View>

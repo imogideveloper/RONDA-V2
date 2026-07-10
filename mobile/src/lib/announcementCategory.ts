@@ -1,5 +1,5 @@
 // Port dari lib/utils/announcement_category.dart
-import { Ionicons } from '@expo/vector-icons';
+import type { IconName } from '../components/Icon';
 import { wargaColors } from '../config/theme';
 import { Announcement } from '../types/models';
 
@@ -11,7 +11,7 @@ export interface AnnouncementCategoryMeta {
   color: string;
   bg: string;
   dotColor: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }
 
 export function categoryKindFor(item: Announcement): AnnouncementCategoryKind {

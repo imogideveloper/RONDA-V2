@@ -1,7 +1,7 @@
 // Port dari lib/pages/shell/main_shell.dart — shell Ketua/Bendahara (5 tab).
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, wargaColors } from '../../config/theme';
 import { Profile, RtUnit } from '../../types/models';
@@ -53,7 +53,7 @@ export function PengurusMainShell({ profile, rt, onLogout, onChanged }: Props) {
             const active = i === index;
             return (
               <Pressable key={t.key} style={styles.navItem} onPress={() => goTab(i)}>
-                <Ionicons name={active ? t.icon : (`${t.icon}-outline` as any)} size={24} color={active ? colors.emerald : colors.textHint} />
+                <Icon name={active ? t.icon : (`${t.icon}-outline` as any)} size={24} color={active ? colors.emerald : colors.textHint} />
                 <Text style={[styles.navLabel, active && { color: colors.emerald, fontWeight: '700' }]}>{t.label}</Text>
               </Pressable>
             );

@@ -1,7 +1,7 @@
 // Port dari lib/pages/warga/warga_surat_form_page.dart
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, wargaColors } from '../../config/theme';
@@ -34,6 +34,28 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
   const [familyIndex, setFamilyIndex] = useState(0);
   const [keperluanIndex, setKeperluanIndex] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [nik, setNik] = useState('');
+  const [birthPlace, setBirthPlace] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [occupation, setOccupation] = useState('');
+
+  const chooseSelf = () => {
+    setForSelf(true);
+    setNik('');
+    setBirthPlace('');
+    setBirthDate('');
+    setOccupation('');
+  };
+
+  const chooseFamily = (i: number) => {
+    setForSelf(false);
+    setFamilyIndex(i);
+    const m = FAMILY_DEMO[i];
+    setNik(m.nik);
+    setBirthPlace(m.birthPlace);
+    setBirthDate(m.birthDate);
+    setOccupation(m.occupation);
+  };
 
   const address = rt.address?.trim() || `${rt.name}, RT ${rt.rtNumber}`;
   const selectedKeperluan = keperluanIndex == null ? '' : suratItem.keperluanOptions[keperluanIndex];
@@ -52,7 +74,12 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
     }
     setSubmitting(true);
     try {
-      await rtService.submitSuratRequest(rt.id, suratItem.suratTypeKey, buildPurpose());
+      await rtService.submitSuratRequest(rt.id, suratItem.suratTypeKey, buildPurpose(), {
+        nik,
+        birthPlace,
+        birthDate,
+        occupation,
+      });
       onSubmitted?.();
       navigation.goBack();
     } catch (e: any) {
@@ -93,28 +120,28 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
                   <Text style={[wargaText.greeting, { fontSize: 12 }]}>Kepala Keluarga</Text>
                 </View>
               </View>
-              <View style={styles.fieldRow}><Field label="NAMA" value={profile.fullName} /><Field label="NIK" value="—" /></View>
-              <View style={styles.fieldRow}><Field label="PEKERJAAN" value="Wiraswasta" /><Field label="STATUS" value="Kawin" /></View>
+              <View style={styles.fieldRow}><Field label="NAMA" value={forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name} /><Field label="NIK" value={nik || '—'} /></View>
+              <View style={styles.fieldRow}><Field label="PEKERJAAN" value={occupation || '—'} /><Field label="TTL" value={birthPlace || birthDate ? `${birthPlace || '—'}, ${birthDate || '—'}` : '—'} /></View>
               <View style={{ marginTop: 10 }}><Field label="ALAMAT" value={address} /></View>
             </View>
 
             <SectionTitle icon="people-outline" title="Surat Untuk" />
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-              <SuratUntukCard selected={forSelf} onPress={() => setForSelf(true)} icon="person-outline" title="Diri Sendiri" sub="Kepala Keluarga" />
-              <SuratUntukCard selected={!forSelf} onPress={() => setForSelf(false)} icon="people-circle-outline" title="Anggota Keluarga" sub="Anak, Istri, dll" />
+              <SuratUntukCard selected={forSelf} onPress={chooseSelf} icon="person-outline" title="Diri Sendiri" sub="Kepala Keluarga" />
+              <SuratUntukCard selected={!forSelf} onPress={() => chooseFamily(familyIndex)} icon="people-circle-outline" title="Anggota Keluarga" sub="Anak, Istri, dll" />
             </View>
 
             {!forSelf && (
               <>
                 <SectionTitle icon="create-outline" title="Data Orang dalam Surat" iconColor="#EA580C" />
                 {FAMILY_DEMO.map((m, i) => (
-                  <Pressable key={m.nik} onPress={() => setFamilyIndex(i)} style={[styles.familyCard, { borderColor: familyIndex === i ? '#3B82F6' : colors.border, backgroundColor: familyIndex === i ? wargaColors.accentBlue : colors.surface }]}>
+                  <Pressable key={m.nik} onPress={() => chooseFamily(i)} style={[styles.familyCard, { borderColor: familyIndex === i ? '#3B82F6' : colors.border, backgroundColor: familyIndex === i ? wargaColors.accentBlue : colors.surface }]}>
                     <View style={styles.familyAvatar}><Text style={{ fontSize: 11, fontWeight: '600' }}>{wargaInitialsFromName(m.name)}</Text></View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={styles.bold14}>{m.name}</Text>
                       <Text style={[wargaText.greeting, { fontSize: 12 }]}>{m.relation} · {m.occupation}</Text>
                     </View>
-                    {familyIndex === i && <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />}
+                    {familyIndex === i && <Icon name="checkmark-circle" size={22} color="#3B82F6" />}
                   </Pressable>
                 ))}
                 <View style={[wargaCardStyle(14), { padding: 14, marginTop: 4 }]}>
@@ -124,10 +151,28 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
               </>
             )}
 
+            <SectionTitle icon="create-outline" title="Data Diri untuk Surat" iconColor="#EA580C" />
+            <View style={[wargaCardStyle(16), { padding: 14, marginTop: 10 }]}>
+              <Text style={styles.inputLabel}>NIK</Text>
+              <TextInput style={styles.suratInput} value={nik} onChangeText={setNik} placeholder="16 digit NIK" placeholderTextColor={colors.textHint} keyboardType="number-pad" />
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Tempat Lahir</Text>
+                  <TextInput style={styles.suratInput} value={birthPlace} onChangeText={setBirthPlace} placeholder="Contoh: Bogor" placeholderTextColor={colors.textHint} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Tanggal Lahir</Text>
+                  <TextInput style={styles.suratInput} value={birthDate} onChangeText={setBirthDate} placeholder="12 Mei 1990" placeholderTextColor={colors.textHint} />
+                </View>
+              </View>
+              <Text style={styles.inputLabel}>Pekerjaan</Text>
+              <TextInput style={styles.suratInput} value={occupation} onChangeText={setOccupation} placeholder="Contoh: Wiraswasta" placeholderTextColor={colors.textHint} />
+            </View>
+
             <SectionTitle icon="document-text-outline" title="Keperluan" iconColor={wargaColors.primaryGreen} />
             {suratItem.keperluanOptions.map((opt, i) => (
               <Pressable key={opt} onPress={() => setKeperluanIndex(i)} style={[wargaCardStyle(14), styles.keperluan]}>
-                <Ionicons name={keperluanIndex === i ? 'radio-button-on' : 'radio-button-off'} size={22} color={keperluanIndex === i ? '#3B82F6' : colors.textSecondary} />
+                <Icon name={keperluanIndex === i ? 'radio-button-on' : 'radio-button-off'} size={22} color={keperluanIndex === i ? '#3B82F6' : colors.textSecondary} />
                 <Text style={styles.keperluanText}>{opt}</Text>
               </Pressable>
             ))}
@@ -157,10 +202,10 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
   );
 }
 
-function InfoBanner({ title, sla, icon, iconColor }: { title: string; sla: string; icon: keyof typeof Ionicons.glyphMap; iconColor: string }) {
+function InfoBanner({ title, sla, icon, iconColor }: { title: string; sla: string; icon: IconName; iconColor: string }) {
   return (
     <View style={styles.infoBanner}>
-      <Ionicons name={icon} size={28} color={iconColor} />
+      <Icon name={icon} size={28} color={iconColor} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.bold14}>{title}</Text>
         <Text style={[wargaText.greeting, { fontSize: 12 }]}>Estimasi {sla}</Text>
@@ -169,10 +214,10 @@ function InfoBanner({ title, sla, icon, iconColor }: { title: string; sla: strin
   );
 }
 
-function SectionTitle({ icon, title, badge, iconColor }: { icon: keyof typeof Ionicons.glyphMap; title: string; badge?: string; iconColor?: string }) {
+function SectionTitle({ icon, title, badge, iconColor }: { icon: IconName; title: string; badge?: string; iconColor?: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 20, gap: 8 }}>
-      <Ionicons name={icon} size={20} color={iconColor ?? '#3B82F6'} />
+      <Icon name={icon} size={20} color={iconColor ?? '#3B82F6'} />
       <Text style={[wargaText.sectionTitle, { fontSize: 15 }]}>{title}</Text>
       {badge && (
         <View style={styles.autoBadge}>
@@ -192,11 +237,11 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SuratUntukCard({ selected, onPress, icon, title, sub }: { selected: boolean; onPress: () => void; icon: keyof typeof Ionicons.glyphMap; title: string; sub: string }) {
+function SuratUntukCard({ selected, onPress, icon, title, sub }: { selected: boolean; onPress: () => void; icon: IconName; title: string; sub: string }) {
   const c = selected ? '#2563EB' : colors.textSecondary;
   return (
     <Pressable onPress={onPress} style={[styles.untukCard, { borderColor: selected ? '#3B82F6' : colors.border, borderWidth: selected ? 2 : 1, backgroundColor: selected ? wargaColors.accentBlue : colors.surface }]}>
-      <Ionicons name={icon} size={24} color={c} />
+      <Icon name={icon} size={24} color={c} />
       <Text style={[styles.untukTitle, { color: selected ? '#2563EB' : colors.textPrimary }]}>{title}</Text>
       <Text style={[styles.untukSub, { color: selected ? '#2563EB' : colors.textSecondary }]}>{sub}</Text>
     </Pressable>
@@ -225,6 +270,8 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: 'row', marginTop: 12, gap: 12 },
   fieldLabel: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.3 },
   fieldValue: { fontWeight: '600', fontSize: 13, color: colors.textPrimary, marginTop: 2 },
+  inputLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 10, marginBottom: 5 },
+  suratInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.textPrimary, backgroundColor: colors.surface },
   untukCard: { flex: 1, alignItems: 'center', padding: 14, borderRadius: 14 },
   untukTitle: { fontWeight: '600', fontSize: 13, marginTop: 8, textAlign: 'center' },
   untukSub: { fontSize: 11, marginTop: 2, textAlign: 'center' },

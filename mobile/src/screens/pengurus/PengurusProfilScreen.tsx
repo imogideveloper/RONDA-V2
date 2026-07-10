@@ -1,7 +1,8 @@
 // Port dari lib/pages/tabs/profil_tab.dart
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { alertDialog, confirmDialog } from '../../lib/dialog';
+import { Icon, type IconName } from '../../components/Icon';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -44,7 +45,7 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
   };
 
   const showHelp = () =>
-    Alert.alert(
+    alertDialog(
       'Panduan RT OS',
       '• Beranda: ringkasan kas & pengumuman.\n' +
         '• Iuran: kelola tagihan warga.\n' +
@@ -54,10 +55,7 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
     );
 
   const confirmLogout = () =>
-    Alert.alert('Keluar?', 'Anda akan keluar dari aplikasi.', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: onLogout },
-    ]);
+    confirmDialog('Keluar?', 'Anda akan keluar dari aplikasi.', onLogout, 'Keluar');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
@@ -92,7 +90,7 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
                   toast.success('Kode disalin');
                 }}
               >
-                <Ionicons name="copy-outline" size={20} color={wargaColors.primaryGreen} />
+                <Icon name="copy-outline" size={20} color={wargaColors.primaryGreen} />
               </Pressable>
             </View>
           )}
@@ -106,6 +104,16 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
             title="Data Warga"
             subtitle="Direktori & kelola bendahara"
             onTap={() => navigation.navigate('DataWarga', { profile, rt })}
+          />
+        )}
+        {profileIsKetua(profile) && (
+          <WargaMenuTile
+            icon="construct-outline"
+            iconBg={wargaColors.accentBlue}
+            iconColor="#185FA5"
+            title="Pengaturan RT"
+            subtitle="Alamat, rekening, kop surat, tanda tangan, QRIS"
+            onTap={() => navigation.navigate('RtSettings', { profile, rt })}
           />
         )}
         <WargaMenuTile
@@ -127,7 +135,7 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
 
         <View style={{ height: 20 }} />
         <Pressable onPress={confirmLogout} style={styles.logout}>
-          <Ionicons name="log-out-outline" size={20} color={wargaColors.dangerRed} />
+          <Icon name="log-out-outline" size={20} color={wargaColors.dangerRed} />
           <Text style={styles.logoutText}>Keluar</Text>
         </Pressable>
         <Text style={styles.version}>RT OS Indonesia v1.0</Text>

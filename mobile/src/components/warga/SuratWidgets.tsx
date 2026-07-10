@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_surat_widgets.dart
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { colors, wargaColors } from '../../config/theme';
 import { SuratRequest, suratIsApproved, suratIsPending, suratIsRejected, suratReferenceCode } from '../../types/models';
 import { SuratItem } from '../../lib/suratCatalog';
@@ -22,7 +22,7 @@ export function WargaSuratHeroCard({
       <View style={{ flexDirection: 'row' }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="document-text-outline" size={16} color="rgba(255,255,255,0.9)" />
+            <Icon name="document-text-outline" size={16} color="rgba(255,255,255,0.9)" />
             <Text style={styles.heroKicker}>LAYANAN SURAT RT</Text>
           </View>
           <Text style={styles.heroBig}>{jenisCount} Jenis</Text>
@@ -33,7 +33,7 @@ export function WargaSuratHeroCard({
           </Text>
         </View>
         <View style={styles.heroIcon}>
-          <Ionicons name="clipboard-outline" size={32} color="#fff" />
+          <Icon name="clipboard-outline" size={32} color="#fff" />
         </View>
       </View>
       <View style={styles.pillRow}>
@@ -45,10 +45,10 @@ export function WargaSuratHeroCard({
   );
 }
 
-function Pill({ icon, label, success }: { icon: keyof typeof Ionicons.glyphMap; label: string; success?: boolean }) {
+function Pill({ icon, label, success }: { icon: IconName; label: string; success?: boolean }) {
   return (
     <View style={[styles.pill, { backgroundColor: `rgba(255,255,255,${success ? 0.22 : 0.14})` }]}>
-      <Ionicons name={icon} size={14} color="#fff" />
+      <Icon name={icon} size={14} color="#fff" />
       <Text style={styles.pillText} numberOfLines={1}>{label}</Text>
     </View>
   );
@@ -91,20 +91,20 @@ export function WargaSuratTypeCard({ item, onTap }: { item: SuratItem; onTap: ()
     <Pressable onPress={onTap} style={({ pressed }) => [wargaCardStyle(16), styles.typeCard, pressed && { opacity: 0.9 }]}>
       <View style={[styles.accent, { backgroundColor: item.accentColor }]} />
       <View style={[styles.typeIcon, { backgroundColor: item.iconBg }]}>
-        <Ionicons name={item.icon} size={22} color={item.iconColor} />
+        <Icon name={item.icon} size={22} color={item.iconColor} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Badge text="SURAT" fg="#7C3AED" bg="#F3E8FF" />
           {item.isPopular && <View style={{ marginLeft: 6 }}><Badge text="POPULER" fg="#fff" bg="#EA580C" /></View>}
           <View style={{ flex: 1 }} />
-          <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+          <Icon name="time-outline" size={12} color={colors.textSecondary} />
           <Text style={styles.sla}>{item.sla}</Text>
         </View>
         <Text style={styles.typeTitle}>{item.title}</Text>
         <Text style={styles.typeDesc} numberOfLines={2}>{item.description}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ alignSelf: 'center' }} />
+      <Icon name="chevron-forward" size={20} color={colors.textSecondary} style={{ alignSelf: 'center' }} />
     </Pressable>
   );
 }
@@ -130,7 +130,7 @@ export function WargaSuratRequestCard({
   const rejected = suratIsRejected(request);
   const approved = suratIsApproved(request);
 
-  let badgeBg = '#FEF3C7', badgeFg = '#92400E', badgeIcon: keyof typeof Ionicons.glyphMap = 'ellipse', badgeLabel = 'Menunggu';
+  let badgeBg = '#FEF3C7', badgeFg = '#92400E', badgeIcon: IconName = 'ellipse', badgeLabel = 'Menunggu';
   if (approved) { badgeBg = wargaColors.lightGreen; badgeFg = wargaColors.primaryGreen; badgeIcon = 'checkmark-circle'; badgeLabel = 'Disetujui'; }
   else if (rejected) { badgeBg = '#FEE2E2'; badgeFg = wargaColors.dangerRed; badgeIcon = 'close-circle-outline'; badgeLabel = 'Ditolak'; }
 
@@ -144,7 +144,7 @@ export function WargaSuratRequestCard({
           </Text>
         </View>
         <View style={[styles.reqBadge, { backgroundColor: badgeBg, borderColor: rejected ? badgeFg + '66' : 'transparent', borderWidth: rejected ? 1 : 0 }]}>
-          <Ionicons name={badgeIcon} size={12} color={badgeFg} />
+          <Icon name={badgeIcon} size={12} color={badgeFg} />
           <Text style={[styles.reqBadgeText, { color: badgeFg }]}>{badgeLabel}</Text>
         </View>
       </View>
@@ -162,7 +162,7 @@ export function WargaSuratRequestCard({
       )}
       {rejected && onReapply && (
         <Pressable onPress={onReapply} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 4 }}>
-          <Ionicons name="refresh" size={18} color={wargaColors.dangerRed} />
+          <Icon name="refresh" size={18} color={wargaColors.dangerRed} />
           <Text style={{ color: wargaColors.dangerRed, fontWeight: '600' }}>Ajukan Ulang</Text>
         </Pressable>
       )}

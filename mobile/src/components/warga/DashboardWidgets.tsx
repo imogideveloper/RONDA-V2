@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_dashboard_widgets.dart + WargaProfileAvatar/PageHeader/MenuTile
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { colors, wargaColors } from '../../config/theme';
 import { wargaCardStyle, wargaText } from './wargaUi';
 
@@ -45,7 +45,7 @@ export function WargaProfileAvatar({
       </View>
       {showCameraBadge && (
         <View style={styles.cameraBadge}>
-          <Ionicons name="camera" size={14} color="#fff" />
+          <Icon name="camera" size={14} color="#fff" />
         </View>
       )}
     </View>
@@ -103,11 +103,11 @@ export function WargaProfileHeaderCard({
       <View style={{ flex: 1, marginLeft: 16 }}>
         <Text style={styles.profileName}>{fullName}</Text>
         <View style={styles.roleChip}>
-          <Ionicons name="person" size={14} color="#fff" />
+          <Icon name="person" size={14} color="#fff" />
           <Text style={styles.roleChipText}>{roleLabel}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-          <Ionicons name="call" size={14} color="rgba(255,255,255,0.85)" />
+          <Icon name="call" size={14} color="rgba(255,255,255,0.85)" />
           <Text style={styles.profilePhone}>{phone}</Text>
         </View>
       </View>
@@ -141,13 +141,13 @@ export function WargaMembershipCard({
       ]}
     >
       <View style={styles.membershipIcon}>
-        <Ionicons name="home" size={22} color={wargaColors.primaryGreen} />
+        <Icon name="home" size={22} color={wargaColors.primaryGreen} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.membershipLabel}>{displayLabel}</Text>
         <Text style={[wargaText.greeting, { fontSize: 12 }]}>{subtitle}</Text>
       </View>
-      <Ionicons
+      <Icon
         name={isActive ? 'checkmark-circle' : 'chevron-forward'}
         size={22}
         color={isActive ? wargaColors.primaryGreen : colors.textSecondary}
@@ -191,7 +191,7 @@ export function WargaMenuTile({
   subtitle,
   onTap,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   iconBg: string;
   iconColor: string;
   title: string;
@@ -204,13 +204,13 @@ export function WargaMenuTile({
       style={({ pressed }) => [wargaCardStyle(16), styles.menuTile, pressed && { opacity: 0.9 }]}
     >
       <View style={[styles.menuIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={22} color={iconColor} />
+        <Icon name={icon} size={22} color={iconColor} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.menuTitle}>{title}</Text>
         <Text style={[wargaText.greeting, { fontSize: 12 }]}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+      <Icon name="chevron-forward" size={22} color={colors.textSecondary} />
     </Pressable>
   );
 }

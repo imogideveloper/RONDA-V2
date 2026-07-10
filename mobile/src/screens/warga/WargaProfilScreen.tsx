@@ -1,7 +1,8 @@
 // Port dari lib/pages/warga/warga_profil_view.dart
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { alertDialog, confirmDialog } from '../../lib/dialog';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, wargaColors } from '../../config/theme';
 import { WargaCard, wargaText } from '../../components/warga/wargaUi';
@@ -73,7 +74,7 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
   };
 
   const showHelp = () =>
-    Alert.alert(
+    alertDialog(
       'Panduan Warga',
       '• Beranda: ringkasan iuran, pengumuman, aksi cepat.\n' +
         '• Iuran: bayar tagihan bulanan (demo QRIS).\n' +
@@ -83,10 +84,7 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
     );
 
   const confirmLogout = () =>
-    Alert.alert('Keluar?', 'Anda akan keluar dari aplikasi.', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: onLogout },
-    ]);
+    confirmDialog('Keluar?', 'Anda akan keluar dari aplikasi.', onLogout, 'Keluar');
 
   const parseKelurahan = () => {
     const addr = rt.address ?? rt.name;
@@ -186,7 +184,7 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
 
         <View style={{ height: 20 }} />
         <Pressable onPress={confirmLogout} style={styles.logout}>
-          <Ionicons name="log-out-outline" size={20} color={wargaColors.dangerRed} />
+          <Icon name="log-out-outline" size={20} color={wargaColors.dangerRed} />
           <Text style={styles.logoutText}>Keluar</Text>
         </Pressable>
       </ScrollView>
@@ -210,7 +208,7 @@ function RoleRow({
   title,
   desc,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   color: string;
   title: string;
   desc: string;
@@ -218,7 +216,7 @@ function RoleRow({
   return (
     <View style={{ flexDirection: 'row', marginBottom: 10 }}>
       <View style={[styles.roleIcon, { backgroundColor: color + '1F' }]}>
-        <Ionicons name={icon} size={18} color={color} />
+        <Icon name={icon} size={18} color={color} />
       </View>
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.roleTitle}>{title}</Text>

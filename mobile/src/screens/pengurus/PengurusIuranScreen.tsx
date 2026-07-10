@@ -1,7 +1,7 @@
 // Port dari lib/pages/tabs/iuran_tab.dart + ketua_iuran_bill_card.dart (mode Ketua/Bendahara)
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { WargaCard, StatusChip, wargaText } from '../../components/warga/wargaUi';
@@ -95,7 +95,7 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
         >
           {onBack && (
             <Pressable onPress={onBack} style={styles.backRow}>
-              <Ionicons name="chevron-back" size={18} color={wargaColors.primaryGreen} />
+              <Icon name="chevron-back" size={18} color={wargaColors.primaryGreen} />
               <Text style={styles.backText}>Kembali ke Beranda</Text>
             </Pressable>
           )}
@@ -104,7 +104,7 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
             subtitle={rtDisplayLabel(rt)}
             trailing={
               <Pressable onPress={generateMonthly} style={styles.refreshBtn}>
-                <Ionicons name="refresh" size={22} color={wargaColors.primaryGreen} />
+                <Icon name="refresh" size={22} color={wargaColors.primaryGreen} />
               </Pressable>
             }
           />
@@ -112,7 +112,7 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
 
           <WargaCard style={{ marginBottom: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="information-circle-outline" size={22} color={wargaColors.primaryGreen} />
+              <Icon name="information-circle-outline" size={22} color={wargaColors.primaryGreen} />
               <Text style={[wargaText.greeting, { flex: 1, marginLeft: 12, lineHeight: 19 }]}>{infoText}</Text>
             </View>
           </WargaCard>
@@ -225,7 +225,7 @@ function KetuaExpandableIuranCard({
           <Text style={[wargaText.greeting, { marginTop: 4 }]}>{formatRupiah(bill.amount)}</Text>
         </View>
         <StatusChip label={iuranIsPaid(bill) ? 'Lunas' : 'Belum bayar'} color={iuranIsPaid(bill) ? wargaColors.primaryGreen : '#BA7517'} />
-        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} style={{ marginLeft: 4 }} />
+        <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} style={{ marginLeft: 4 }} />
       </Pressable>
       {expanded && !iuranIsPaid(bill) && (
         <View style={{ marginTop: 16 }}>
@@ -235,7 +235,7 @@ function KetuaExpandableIuranCard({
             </View>
           )}
           <Pressable onPress={hasPhone ? mention : undefined} style={[styles.waBtn, !hasPhone && { opacity: 0.5 }]}>
-            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+            <Icon name="logo-whatsapp" size={20} color="#25D366" />
             <Text style={styles.waText}>{hasPhone ? 'Mention tagihan ke No. warga' : 'Nomor warga belum diisi'}</Text>
           </Pressable>
           {mode === 'tagih' && (

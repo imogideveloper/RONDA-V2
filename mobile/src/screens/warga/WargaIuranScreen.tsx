@@ -21,6 +21,7 @@ import { rtService } from '../../services/rtService';
 import { wargaHomeLoader } from '../../services/wargaHomeLoader';
 import { IuranRecord, iuranIsPaid, iuranIsUnpaid, rtDisplayLabel } from '../../types/models';
 import { iuranPeriodTitle } from '../../lib/period';
+import { groupByYearMonth, dateFromPeriodKey } from '../../lib/papanInfo';
 import { Profile, RtUnit } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 import { Text } from 'react-native';
@@ -130,8 +131,13 @@ export function WargaIuranScreen({ profile, rt }: Props) {
             </WargaCard>
           ) : (
             <>
-              {bills.map((b) => (
-                <WargaIuranHistoryCard key={b.id} record={b} onPay={iuranIsUnpaid(b) ? openBayar : undefined} />
+              {groupByYearMonth(bills, (b) => dateFromPeriodKey(b.periodKey)).map((g) => (
+                <View key={g.key}>
+                  <Text style={styles.monthHeader}>{g.label}</Text>
+                  {g.items.map((b) => (
+                    <WargaIuranHistoryCard key={b.id} record={b} onPay={iuranIsUnpaid(b) ? openBayar : undefined} />
+                  ))}
+                </View>
               ))}
               <View style={{ height: 12 }} />
               <WargaIuranTotalsCard
@@ -156,4 +162,5 @@ export function WargaIuranScreen({ profile, rt }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: wargaColors.bgColor },
   scroll: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
+  monthHeader: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4, marginTop: 10, marginBottom: 8, textTransform: 'uppercase' },
 });

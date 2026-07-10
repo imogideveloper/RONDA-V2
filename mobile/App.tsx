@@ -21,9 +21,12 @@ import WargaKontribusiSayaScreen from './src/screens/warga/WargaKontribusiSayaSc
 import WargaRiwayatTransaksiScreen from './src/screens/warga/WargaRiwayatTransaksiScreen';
 import WargaLayananSuratScreen from './src/screens/warga/WargaLayananSuratScreen';
 import WargaSuratFormScreen from './src/screens/warga/WargaSuratFormScreen';
+import WargaSuratCustomScreen from './src/screens/warga/WargaSuratCustomScreen';
 import CreateAnnouncementScreen from './src/screens/pengurus/CreateAnnouncementScreen';
 import SuratPengantarScreen from './src/screens/pengurus/SuratPengantarScreen';
+import SuratDraftScreen from './src/screens/pengurus/SuratDraftScreen';
 import DataWargaScreen from './src/screens/pengurus/DataWargaScreen';
+import RtSettingsScreen from './src/screens/pengurus/RtSettingsScreen';
 import CreateRtScreen from './src/screens/onboarding/CreateRtScreen';
 import JoinRtScreen from './src/screens/onboarding/JoinRtScreen';
 import type { RootStackParamList } from './src/navigation/types';
@@ -65,9 +68,12 @@ export default function App() {
             <Stack.Screen name="WargaRiwayatTransaksi" component={WargaRiwayatTransaksiScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaLayananSurat" component={WargaLayananSuratScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaSuratForm" component={WargaSuratFormScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="WargaSuratCustom" component={WargaSuratCustomScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="SuratDraft" component={SuratDraftScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="CreateAnnouncement" component={CreateAnnouncementScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="SuratPengantar" component={SuratPengantarScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="DataWarga" component={DataWargaScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="RtSettings" component={RtSettingsScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="CreateRt" component={CreateRtScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JoinRt" component={JoinRtScreen} options={{ animation: 'slide_from_right' }} />
           </Stack.Navigator>

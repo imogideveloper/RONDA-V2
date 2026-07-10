@@ -1,7 +1,7 @@
 // Port dari lib/widgets/warga_tagihan_flow_widgets.dart
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { IuranRecord, iuranPaymentMethodLabel } from '../../types/models';
@@ -22,7 +22,7 @@ export function WargaTagihanHeroCard({
   return (
     <View style={styles.hero}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Ionicons name="warning" size={16} color="rgba(255,255,255,0.9)" />
+        <Icon name="warning" size={16} color="rgba(255,255,255,0.9)" />
         <Text style={styles.heroKicker}>TOTAL TAGIHAN</Text>
       </View>
       <Text style={styles.heroAmount}>{formatRupiah(total)}</Text>
@@ -38,7 +38,7 @@ export function WargaMenungguVerifikasiCard({ bill }: { bill: IuranRecord }) {
   return (
     <View style={styles.menunggu}>
       <View style={styles.menungguIcon}>
-        <Ionicons name="time-outline" size={22} color="#EA580C" />
+        <Icon name="time-outline" size={22} color="#EA580C" />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.periodTitle}>{iuranPeriodTitle(bill)}</Text>
@@ -94,7 +94,7 @@ export function WargaTagihanBillTile({
               { borderColor: selected ? wargaColors.dangerRed : colors.border, backgroundColor: selected ? wargaColors.dangerRed : 'transparent' },
             ]}
           >
-            {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
+            {selected && <Icon name="checkmark" size={14} color="#fff" />}
           </View>
         </Pressable>
         <View style={{ flex: 1, marginLeft: 12 }}>
@@ -117,7 +117,7 @@ export function WargaTagihanBillTile({
         <View style={styles.tileDetail}>
           {items.map((it) => (
             <View key={it.label} style={styles.lineItem}>
-              <Ionicons name={it.icon} size={18} color={colors.textSecondary} />
+              <Icon name={it.icon} size={18} color={colors.textSecondary} />
               <Text style={styles.lineLabel}>{it.label}</Text>
               <Text style={styles.lineAmount}>{formatRupiah(it.amount)}</Text>
             </View>
@@ -151,7 +151,7 @@ export function WargaTagihanPayBar({
         </View>
         <Pressable onPress={onPay} style={styles.payBarBtn}>
           <Text style={styles.payBarBtnText}>Bayar</Text>
-          <Ionicons name="chevron-forward" size={20} color="#fff" />
+          <Icon name="chevron-forward" size={20} color="#fff" />
         </Pressable>
       </View>
     </SafeAreaView>
@@ -166,7 +166,7 @@ export function WargaPaymentMethodTile({
   subtitle,
   onTap,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   iconBg: string;
   iconColor: string;
   title: string;
@@ -176,13 +176,13 @@ export function WargaPaymentMethodTile({
   return (
     <Pressable onPress={onTap} style={({ pressed }) => [wargaCardStyle(14), styles.method, pressed && { opacity: 0.9 }]}>
       <View style={[styles.methodIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={24} color={iconColor} />
+        <Icon name={icon} size={24} color={iconColor} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={[styles.periodTitle, { fontSize: 15 }]}>{title}</Text>
         <Text style={styles.tileSub}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+      <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
     </Pressable>
   );
 }
@@ -201,7 +201,7 @@ export function WargaUploadBuktiBox({
       ) : (
         <View style={{ alignItems: 'center' }}>
           <View style={styles.uploadIcon}>
-            <Ionicons name="cloud-upload-outline" size={28} color="#0284C7" />
+            <Icon name="cloud-upload-outline" size={28} color="#0284C7" />
           </View>
           <Text style={styles.uploadTitle}>Tap untuk upload bukti</Text>
           <Text style={styles.uploadSub}>JPG, PNG — maks 5MB</Text>
