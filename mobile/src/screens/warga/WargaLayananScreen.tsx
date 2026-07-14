@@ -8,7 +8,6 @@ import { Icon } from '../../components/Icon';
 import { colors, wargaColors } from '../../config/theme';
 import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { useToast } from '../../components/Toast';
-import { openWhatsAppPhone } from '../../lib/whatsapp';
 import {
   LAYANAN_CATEGORIES,
   LayananCategory,
@@ -29,14 +28,9 @@ export default function WargaLayananScreen(_props: Props) {
   const results = useMemo(() => searchLayanan(query), [query]);
   const searching = query.trim() !== '';
 
-  const contact = async (s: LayananService) => {
-    if (!s.phone) {
-      toast.success(`Hubungi pengurus RT untuk info ${s.name}`);
-      return;
-    }
-    const ok = await openWhatsAppPhone(s.phone);
-    if (!ok) toast.error('Tidak dapat membuka WhatsApp');
-  };
+  // Semua layanan masih "under construction" — beri info, jangan buka aksi.
+  const underConstruction = (name?: string) =>
+    toast.success(`🚧 ${name ? `${name} — ` : ''}Fitur dalam pengembangan, segera hadir`);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
@@ -80,7 +74,7 @@ export default function WargaLayananScreen(_props: Props) {
               {results.length > 0 ? `${results.length} hasil untuk "${query.trim()}"` : `Tidak ada hasil untuk "${query.trim()}"`}
             </Text>
             {results.map((s, i) => (
-              <ServiceRow key={`${s.name}-${i}`} service={s} color={s.category.color} icon={s.category.icon} onTap={() => contact(s)} />
+              <ServiceRow key={`${s.name}-${i}`} service={s} color={s.category.color} icon={s.category.icon} onTap={() => underConstruction(s.name)} />
             ))}
           </>
         ) : (
@@ -120,18 +114,26 @@ export default function WargaLayananScreen(_props: Props) {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.sheetTitle}>{selected.label}</Text>
-                    <Text style={styles.sheetSub}>{selected.services.length} layanan</Text>
+                    <Text style={styles.sheetSub}>Segera hadir</Text>
                   </View>
                   <Pressable onPress={() => setSelected(null)} hitSlop={8}>
                     <Icon name="close-circle-outline" size={24} color={colors.textSecondary} />
                   </Pressable>
                 </View>
-                <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
-                  {selected.services.map((s, i) => (
-                    <ServiceRow key={`${s.name}-${i}`} service={s} color={selected.color} icon={selected.icon} onTap={() => contact(s)} />
-                  ))}
-                  <View style={{ height: 8 }} />
-                </ScrollView>
+                <View style={styles.ucBox}>
+                  <View style={[styles.ucIcon, { backgroundColor: selected.color + '1A' }]}>
+                    <Icon name="construct-outline" size={34} color={selected.color} />
+                  </View>
+                  <Text style={styles.ucTitle}>Dalam Pengembangan</Text>
+                  <Text style={styles.ucSub}>
+                    Layanan {selected.label} sedang kami siapkan dan akan segera tersedia.
+                    Terima kasih atas kesabaran Anda 🙏
+                  </Text>
+                  <View style={styles.ucBadge}>
+                    <Text style={styles.ucBadgeText}>{selected.services.length} layanan direncanakan</Text>
+                  </View>
+                </View>
+                <View style={{ height: 8 }} />
               </>
             )}
           </SafeAreaView>
@@ -242,4 +244,10 @@ const styles = StyleSheet.create({
   sheetIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sheetTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   sheetSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  ucBox: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 18 },
+  ucIcon: { width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  ucTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  ucSub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', lineHeight: 19, marginTop: 8 },
+  ucBadge: { marginTop: 16, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  ucBadgeText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
 });

@@ -86,12 +86,9 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
     maritalStatus,
   };
 
-  const buildPurpose = () => {
-    const subject = forSelf
-      ? `Diri sendiri (${profile.fullName})`
-      : `${FAMILY_DEMO[familyIndex].name} · ${FAMILY_DEMO[familyIndex].relation}`;
-    return `[${subject}] ${selectedKeperluan}`;
-  };
+  // Keperluan = teks apa adanya (tanpa penanda "[Diri sendiri (…)]"),
+  // karena data pemohon di surat sudah menunjukkan untuk siapa surat dibuat.
+  const buildPurpose = () => selectedKeperluan;
 
   const submit = async () => {
     if (selectedKeperluan === '') {
@@ -109,7 +106,7 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
         religion,
         maritalStatus,
       });
-      onSubmitted?.();
+      onSubmitted?.(suratItem.title);
       navigation.goBack();
     } catch (e: any) {
       toast.error(String(e?.message ?? e));

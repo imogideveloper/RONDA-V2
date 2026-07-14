@@ -61,6 +61,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
   const [openYears, setOpenYears] = useState<Set<number>>(new Set());
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set());
   const [detailReq, setDetailReq] = useState<SuratRequest | null>(null);
+  const [submittedType, setSubmittedType] = useState<string | null>(null);
 
   const toggleNum = (setter: React.Dispatch<React.SetStateAction<Set<number>>>, key: number) =>
     setter((prev) => {
@@ -123,37 +124,36 @@ export default function WargaLayananSuratScreen({ route }: Props) {
     }
   }, [rt.id]);
 
+  const onSubmittedSuccess = useCallback(
+    (suratType?: string) => {
+      setSegment(0);
+      setSubmittedType(suratType ?? 'Surat');
+      load();
+    },
+    [load],
+  );
+
   const openForm = useCallback(
     (item: SuratItem) => {
-      navigation.navigate('WargaSuratForm', {
-        profile,
-        rt,
-        suratItem: item,
-        onSubmitted: () => {
-          setSegment(0);
-          load();
-          toast.success('Permohonan surat terkirim');
-        },
-      });
+      navigation.navigate('WargaSuratForm', { profile, rt, suratItem: item, onSubmitted: onSubmittedSuccess });
     },
-    [navigation, profile, rt, load, toast],
+    [navigation, profile, rt, onSubmittedSuccess],
   );
 
   const openCustom = useCallback(() => {
-    navigation.navigate('WargaSuratCustom', {
-      profile,
-      rt,
-      onSubmitted: () => {
-        setSegment(0);
-        load();
-        toast.success('Permohonan surat terkirim');
-      },
-    });
-  }, [navigation, profile, rt, load, toast]);
+    navigation.navigate('WargaSuratCustom', { profile, rt, onSubmitted: onSubmittedSuccess });
+  }, [navigation, profile, rt, onSubmittedSuccess]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Sembunyikan kartu "Permohonan Terkirim!" otomatis setelah beberapa detik.
+  useEffect(() => {
+    if (!submittedType) return;
+    const t = setTimeout(() => setSubmittedType(null), 6000);
+    return () => clearTimeout(t);
+  }, [submittedType]);
 
   // Buka form otomatis bila initialSuratType diberikan (sekali).
   const [autoOpened, setAutoOpened] = useState(false);
@@ -447,6 +447,21 @@ export default function WargaLayananSuratScreen({ route }: Props) {
           </SafeAreaView>
         </View>
       </Modal>
+
+      {/* Notifikasi sukses — overlay mengambang (bukan bagian daftar) */}
+      <Modal visible={submittedType != null} transparent animationType="fade" onRequestClose={() => setSubmittedType(null)}>
+        <Pressable style={styles.successBackdrop} onPress={() => setSubmittedType(null)}>
+          <View style={styles.successCard}>
+            <View style={styles.successIcon}>
+              <Icon name="checkmark-circle" size={30} color="#fff" />
+            </View>
+            <Text style={styles.successTitle}>Permohonan Terkirim!</Text>
+            <Text style={styles.successSub}>
+              {submittedType} berhasil diajukan. Estimasi 2 hari kerja.
+            </Text>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 
@@ -492,6 +507,24 @@ const tlStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: wargaColors.bgColor },
   scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24 },
+  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  successCard: {
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  successIcon: { width: 60, height: 60, borderRadius: 20, backgroundColor: wargaColors.primaryGreen, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  successTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  successSub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 18 },
   menungguBadge: { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FEF3C7', borderRadius: 20 },
   menungguText: { fontSize: 10, fontWeight: '700', color: '#92400E' },
   addBtn: {

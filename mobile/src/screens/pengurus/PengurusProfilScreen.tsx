@@ -182,10 +182,10 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
           />
         )}
         <WargaMenuTile
-          icon="document-text"
+          icon="shield-outline"
           iconBg={wargaColors.accentLime}
           iconColor="#3B6D11"
-          title="Surat Pengantar"
+          title="Verifikasi Surat"
           subtitle="Kelola permohonan surat warga"
           onTap={() => navigation.navigate('SuratPengantar', { profile, rt })}
         />

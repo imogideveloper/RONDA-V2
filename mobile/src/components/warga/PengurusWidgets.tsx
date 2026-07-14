@@ -38,10 +38,10 @@ export function KetuaQuickActionGrid({
 }) {
   return (
     <View style={{ flexDirection: 'row', gap: 10 }}>
-      <QuickTile icon="cash" color={wargaColors.primaryGreen} label={'Tagih\nIuran'} badge={tagihCount} onTap={onTagih} />
-      <QuickTile icon="eye" color="#185FA5" label={'Verifikasi\nIuran'} badge={verifikasiCount} onTap={onVerifikasi} />
-      <QuickTile icon="create" color="#3B6D11" label={'Approve\nSurat'} badge={suratPendingCount} onTap={onApproveSurat} />
-      <QuickTile icon="megaphone" color="#BA7517" label={'Buat\nInfo'} onTap={onBuatInfo} />
+      <QuickTile icon="card-outline" color={wargaColors.primaryGreen} label={'Tagih\nIuran'} badge={tagihCount} onTap={onTagih} />
+      <QuickTile icon="eye-outline" color="#185FA5" label={'Verifikasi\nIuran'} badge={verifikasiCount} onTap={onVerifikasi} />
+      <QuickTile icon="document-text-outline" color="#3B6D11" label={'Verifikasi\nSurat'} badge={suratPendingCount} onTap={onApproveSurat} />
+      <QuickTile icon="megaphone-outline" color="#BA7517" label={'Buat\nInfo'} onTap={onBuatInfo} />
     </View>
   );
 }

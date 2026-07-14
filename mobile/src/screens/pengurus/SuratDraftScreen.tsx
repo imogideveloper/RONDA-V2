@@ -1,19 +1,15 @@
 // Preview draft surat berkop untuk Ketua RT (dibuka dari layar approve surat).
 // Kop, alamat, dan tanda tangan diambil dari Setting RT (jika sudah diisi).
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import * as Clipboard from 'expo-clipboard';
 import { colors, radius, wargaColors } from '../../config/theme';
 import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import {
-  SuratLetterData,
-  SuratLetterPreview,
-  suratLetterPlainText,
-} from '../../components/warga/SuratLetterPreview';
+import { SuratLetterData, SuratLetterPreview } from '../../components/warga/SuratLetterPreview';
+import { exportSuratPdf } from '../../lib/suratPdf';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SuratDraft'>;
@@ -37,9 +33,16 @@ export default function SuratDraftScreen({ route }: Props) {
     maritalStatus: request.maritalStatus,
   };
 
-  const copyText = async () => {
-    await Clipboard.setStringAsync(suratLetterPlainText(data));
-    toast.success('Teks draft disalin');
+  const [downloading, setDownloading] = useState(false);
+  const downloadPdf = async () => {
+    setDownloading(true);
+    try {
+      await exportSuratPdf(data, { showSignature: true });
+    } catch (e: any) {
+      toast.error(`Gagal membuat PDF: ${String(e?.message ?? e)}`);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -57,9 +60,15 @@ export default function SuratDraftScreen({ route }: Props) {
           </Text>
         </View>
 
-        <Pressable style={styles.copyBtn} onPress={copyText}>
-          <Icon name="copy-outline" size={18} color="#fff" />
-          <Text style={styles.copyText}>Salin Teks Draft</Text>
+        <Pressable style={styles.copyBtn} onPress={downloadPdf} disabled={downloading}>
+          {downloading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Icon name="download-outline" size={18} color="#fff" />
+              <Text style={styles.copyText}>Unduh PDF</Text>
+            </>
+          )}
         </Pressable>
         <View style={{ height: 32 }} />
       </ScrollView>
