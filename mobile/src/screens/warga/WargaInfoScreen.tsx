@@ -129,7 +129,7 @@ export function WargaInfoScreen({ profile, rt, onAnnouncementRead }: Props) {
           </Pressable>
           <Pressable style={[styles.segTab, tab === 1 && styles.segTabActive]} onPress={() => setTab(1)}>
             <Icon name="time-outline" size={15} color={tab === 1 ? wargaColors.primaryGreen : colors.textSecondary} />
-            <Text style={[styles.segText, tab === 1 && styles.segTextActive]}>Riwayat</Text>
+            <Text style={[styles.segText, tab === 1 && styles.segTextActive]} numberOfLines={1}>Riwayat Informasi</Text>
             {expired.length > 0 && <View style={styles.segBadge}><Text style={styles.segBadgeText}>{expired.length}</Text></View>}
           </Pressable>
         </View>
@@ -155,7 +155,7 @@ export function WargaInfoScreen({ profile, rt, onAnnouncementRead }: Props) {
                   <Text style={styles.yearText}>{y.year}</Text>
                   <View style={styles.countBadge}><Text style={styles.countBadgeText}>{y.count}</Text></View>
                   <View style={{ flex: 1 }} />
-                  {yOpen && <Text style={styles.tutupText}>Tutup</Text>}
+                  <Text style={styles.tutupText}>{yOpen ? 'Tutup' : 'Lihat'}</Text>
                 </Pressable>
                 {yOpen &&
                   y.months.map((mg) => {

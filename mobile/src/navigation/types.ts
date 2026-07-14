@@ -12,6 +12,7 @@ export type RootStackParamList = {
   WargaKontakDarurat: WargaParams;
   WargaKontribusiSaya: WargaParams;
   WargaRiwayatTransaksi: WargaParams;
+  WargaLayanan: WargaParams;
   WargaLayananSurat: { profile: Profile; rt: RtUnit; initialSuratType?: string };
   WargaSuratForm: { profile: Profile; rt: RtUnit; suratItem: SuratItem; onSubmitted?: () => void };
   WargaSuratCustom: { profile: Profile; rt: RtUnit; onSubmitted?: () => void };

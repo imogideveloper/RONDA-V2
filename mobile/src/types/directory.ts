@@ -13,6 +13,7 @@ export interface WargaDirectoryEntry {
   role: string;
   isPendingImport: boolean;
   isKetua: boolean;
+  avatarUrl: string | null;
 }
 
 export function directoryFromProfile(p: Profile): WargaDirectoryEntry {
@@ -25,6 +26,7 @@ export function directoryFromProfile(p: Profile): WargaDirectoryEntry {
     role: p.role,
     isPendingImport: false,
     isKetua: profileIsKetua(p),
+    avatarUrl: p.avatarUrl ?? null,
   };
 }
 
@@ -38,6 +40,7 @@ export function directoryFromRegistry(map: Row): WargaDirectoryEntry {
     role: 'warga',
     isPendingImport: true,
     isKetua: false,
+    avatarUrl: null,
   };
 }
 

@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -171,9 +172,13 @@ export default function DataWargaScreen({ route }: Props) {
             return (
               <Pressable key={m.id} onPress={editable ? () => setEditing(m) : undefined} disabled={!editable}>
                 <WargaCard style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', padding: 14 }}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{m.fullName ? m.fullName[0].toUpperCase() : '?'}</Text>
-                  </View>
+                  {m.avatarUrl ? (
+                    <Image source={{ uri: m.avatarUrl }} style={styles.avatarImg} />
+                  ) : (
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{m.fullName ? m.fullName[0].toUpperCase() : '?'}</Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ fontWeight: '600', color: colors.textPrimary }}>{m.fullName}</Text>
                     <Text style={{ fontSize: 13, color: colors.textSecondary }}>{m.phone}</Text>
@@ -334,6 +339,7 @@ const styles = StyleSheet.create({
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 16, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   search: { flex: 1, paddingVertical: 12, fontSize: 15, color: colors.textPrimary },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.emeraldSoft, alignItems: 'center', justifyContent: 'center' },
+  avatarImg: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.emeraldSoft },
   avatarText: { color: colors.emerald, fontWeight: '700' },
   menuBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', paddingTop: 60, paddingRight: 12, alignItems: 'flex-end' },
   menu: { backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 6, minWidth: 220, ...{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 } },

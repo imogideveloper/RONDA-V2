@@ -529,6 +529,10 @@ AS $$
   SELECT rt_id FROM public.profiles WHERE id = auth.uid();
 $$;
 
+-- Wajib: tanpa EXECUTE, evaluasi policy profiles_select_rt_members gagal
+-- sehingga Ketua hanya bisa membaca profilnya sendiri (warga se-RT tak muncul).
+GRANT EXECUTE ON FUNCTION public.current_user_rt_id() TO authenticated;
+
 -- Policy SELECT: selalu boleh baca profil sendiri + anggota RT yang sama
 DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
 CREATE POLICY "profiles_select_own" ON public.profiles

@@ -15,19 +15,21 @@ export const TEMPLATE_CSV =
 
 export const wargaDirectoryService = {
   async getDirectory(rtId: string): Promise<WargaDirectoryEntry[]> {
-    const { data: membersData } = await supabase
+    const { data: membersData, error: membersErr } = await supabase
       .from('profiles')
       .select()
       .eq('rt_id', rtId)
       .order('role')
       .order('full_name');
+    if (membersErr) throw membersErr;
 
-    const { data: pendingData } = await supabase
+    const { data: pendingData, error: pendingErr } = await supabase
       .from('rt_warga_registry')
       .select()
       .eq('rt_id', rtId)
       .filter('claimed_at', 'is', null)
       .order('full_name');
+    if (pendingErr) throw pendingErr;
 
     const members = (membersData ?? []).map((e) => directoryFromProfile(profileFromMap(e)));
     const memberPhones = new Set(members.map((m) => normalizePhone(m.phone)));

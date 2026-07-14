@@ -139,7 +139,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
           onTagihIuran={openBayarIuran}
           onSuratRt={() => navigation.navigate('WargaLayananSurat', { profile, rt })}
           onInfo={() => onNavigateTab(2)}
-          onLayanan={() => navigation.navigate('WargaLayananSurat', { profile, rt })}
+          onLayanan={() => navigation.navigate('WargaLayanan', { profile, rt })}
         />
 
         <View style={{ height: 12 }} />

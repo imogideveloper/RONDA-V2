@@ -1,5 +1,5 @@
-// Port dari lib/pages/tabs/profil_tab.dart
-import React, { useState } from 'react';
+// Port dari lib/pages/tabs/profil_tab.dart — redesain: header + stat + Informasi + Kelola RT
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { alertDialog, confirmDialog } from '../../lib/dialog';
 import { Icon, type IconName } from '../../components/Icon';
@@ -7,17 +7,13 @@ import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, wargaColors } from '../../config/theme';
-import { WargaCard, wargaText } from '../../components/warga/wargaUi';
-import {
-  WargaInfoRow,
-  WargaMenuTile,
-  WargaPageHeader,
-  WargaProfileHeaderCard,
-} from '../../components/warga/DashboardWidgets';
+import { colors, formatRupiah, wargaColors } from '../../config/theme';
+import { WargaMenuTile, WargaProfileAvatar } from '../../components/warga/DashboardWidgets';
 import { EditProfileModal } from '../../components/warga/EditProfileModal';
 import { useToast } from '../../components/Toast';
 import { authService } from '../../services/authService';
+import { rtService } from '../../services/rtService';
+import { wargaDirectoryService } from '../../services/wargaDirectoryService';
 import { Profile, RtUnit, profileIsBendahara, profileIsKetua, profileRoleLabel, rtDisplayLabel } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -33,7 +29,26 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [editing, setEditing] = useState(false);
+  const [saldo, setSaldo] = useState<number | null>(null);
+  const [totalWarga, setTotalWarga] = useState<number | null>(null);
   const canManage = profileIsKetua(profile) || profileIsBendahara(profile);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const ks = await rtService.getKasSummary(rt.id);
+        setSaldo(ks.saldo);
+      } catch {
+        // abaikan
+      }
+      try {
+        const dir = await wargaDirectoryService.getDirectory(rt.id);
+        setTotalWarga(dir.filter((e) => !e.isPendingImport).length);
+      } catch {
+        // abaikan
+      }
+    })();
+  }, [rt.id]);
 
   const onSaved = async () => {
     const updated = await authService.getProfile();
@@ -57,45 +72,95 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
   const confirmLogout = () =>
     confirmDialog('Keluar?', 'Anda akan keluar dari aplikasi.', onLogout, 'Keluar');
 
+  const waPhone = profile.phone.length > 0 ? profile.phone : 'Belum diisi';
+
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <WargaPageHeader title="Profil" subtitle="Ketuk foto untuk ubah profil & unggah foto" />
-        <View style={{ height: 16 }} />
+        {/* Kartu profil */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerBand} />
+          <View style={{ marginTop: -44 }}>
+            <WargaProfileAvatar
+              imageUrl={profile.avatarUrl}
+              fullName={profile.fullName}
+              radius={44}
+              showCameraBadge
+              onTap={() => setEditing(true)}
+            />
+          </View>
+          <Text style={styles.headerName}>{profile.fullName}</Text>
+          <View style={styles.roleBadge}>
+            <Icon name="business" size={12} color={wargaColors.primaryGreen} />
+            <Text style={styles.roleBadgeText}>{profileRoleLabel(profile)}</Text>
+            <View style={styles.onlineDot} />
+          </View>
+          <Text style={styles.headerSub}>{rtDisplayLabel(rt)} · {rt.name}</Text>
+        </View>
 
-        <WargaProfileHeaderCard
-          fullName={profile.fullName}
-          phone={profile.phone.length > 0 ? profile.phone : '-'}
-          roleLabel={profileRoleLabel(profile)}
-          avatarUrl={profile.avatarUrl}
-          onEditProfile={() => setEditing(true)}
+        {/* 3 stat tiles */}
+        <View style={styles.statRow}>
+          <StatTile icon="home" color="#185FA5" value={rtDisplayLabel(rt)} label="RT / RW" />
+          <StatTile icon="people" color={wargaColors.primaryGreen} value={totalWarga == null ? '—' : String(totalWarga)} label="TOTAL WARGA" />
+          <StatTile icon="wallet" color="#5B21B6" value={saldo == null ? '—' : formatRupiah(saldo)} label="SALDO KAS" />
+        </View>
+
+        {/* Informasi */}
+        <Text style={styles.sectionLabel}>Informasi</Text>
+        <WargaMenuTile
+          icon="notifications-outline"
+          iconBg={wargaColors.lightGreen}
+          iconColor={wargaColors.primaryGreen}
+          title="Notifikasi"
+          subtitle="Aktif"
+          onTap={() => toast.success('Pengaturan notifikasi segera hadir')}
         />
-        <View style={{ height: 16 }} />
+        <WargaMenuTile
+          icon="shield-outline"
+          iconBg={wargaColors.accentBlue}
+          iconColor="#185FA5"
+          title="Privasi & Keamanan"
+          subtitle="Kelola keamanan akun"
+          onTap={() => toast.success('Pengaturan privasi segera hadir')}
+        />
+        <WargaMenuTile
+          icon="home-outline"
+          iconBg={wargaColors.accentYellow}
+          iconColor="#BA7517"
+          title="Alamat"
+          subtitle={rt.address ?? rt.name}
+          onTap={() => setEditing(true)}
+        />
+        <WargaMenuTile
+          icon="call"
+          iconBg={wargaColors.lightGreen}
+          iconColor={wargaColors.primaryGreen}
+          title="WhatsApp"
+          subtitle={waPhone}
+          onTap={() => setEditing(true)}
+        />
 
-        <WargaCard style={{ marginBottom: 16 }}>
-          <Text style={wargaText.sectionTitle}>RT Anda</Text>
-          <View style={{ height: 8 }} />
-          <WargaInfoRow label="Nama" value={rt.name} />
-          <WargaInfoRow label="RT / RW" value={rtDisplayLabel(rt)} />
-          {rt.address != null && <WargaInfoRow label="Alamat" value={rt.address} />}
-          {profileIsKetua(profile) && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-              <Text style={{ flex: 1, fontWeight: '600', fontSize: 13, color: colors.textPrimary }}>
-                Kode undangan: {rt.inviteCode}
-              </Text>
-              <Pressable
-                hitSlop={8}
-                onPress={async () => {
-                  await Clipboard.setStringAsync(rt.inviteCode);
-                  toast.success('Kode disalin');
-                }}
-              >
-                <Icon name="copy-outline" size={20} color={wargaColors.primaryGreen} />
-              </Pressable>
+        {/* Kelola RT */}
+        <View style={{ height: 12 }} />
+        <Text style={styles.sectionLabel}>Kelola RT</Text>
+        {profileIsKetua(profile) && (
+          <View style={styles.inviteCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inviteLabel}>Kode undangan RT</Text>
+              <Text style={styles.inviteCode}>{rt.inviteCode}</Text>
             </View>
-          )}
-        </WargaCard>
-
+            <Pressable
+              hitSlop={8}
+              style={styles.copyBtn}
+              onPress={async () => {
+                await Clipboard.setStringAsync(rt.inviteCode);
+                toast.success('Kode disalin');
+              }}
+            >
+              <Icon name="copy-outline" size={18} color={wargaColors.primaryGreen} />
+            </Pressable>
+          </View>
+        )}
         {canManage && (
           <WargaMenuTile
             icon="people"
@@ -161,9 +226,74 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
   );
 }
 
+function StatTile({ icon, color, value, label }: { icon: IconName; color: string; value: string; label: string }) {
+  return (
+    <View style={styles.statTile}>
+      <View style={[styles.statIcon, { backgroundColor: color + '1F' }]}>
+        <Icon name={icon} size={18} color={color} />
+      </View>
+      <Text style={styles.statValue} numberOfLines={1}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: wargaColors.bgColor },
   scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 100 },
+  headerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    paddingBottom: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  headerBand: { height: 68, alignSelf: 'stretch', backgroundColor: wargaColors.lightGreen },
+  headerName: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginTop: 8 },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: wargaColors.lightGreen,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginTop: 8,
+  },
+  roleBadgeText: { fontSize: 12, fontWeight: '600', color: wargaColors.primaryGreen },
+  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: wargaColors.primaryGreen, marginLeft: 2 },
+  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 8 },
+  statRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  statTile: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+  },
+  statIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  statValue: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  statLabel: { fontSize: 10, color: colors.textSecondary, marginTop: 2, letterSpacing: 0.3 },
+  sectionLabel: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 10 },
+  inviteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+  },
+  inviteLabel: { fontSize: 12, color: colors.textSecondary },
+  inviteCode: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, letterSpacing: 1, marginTop: 2 },
+  copyBtn: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: wargaColors.lightGreen },
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: wargaColors.dangerRed },
   logoutText: { color: wargaColors.dangerRed, fontWeight: '600', fontSize: 15 },
   version: { textAlign: 'center', fontSize: 12, color: colors.textSecondary, marginTop: 16 },

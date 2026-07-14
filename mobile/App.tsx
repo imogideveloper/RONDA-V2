@@ -19,6 +19,7 @@ import WargaTagihanIuranScreen from './src/screens/warga/WargaTagihanIuranScreen
 import WargaKontakDaruratScreen from './src/screens/warga/WargaKontakDaruratScreen';
 import WargaKontribusiSayaScreen from './src/screens/warga/WargaKontribusiSayaScreen';
 import WargaRiwayatTransaksiScreen from './src/screens/warga/WargaRiwayatTransaksiScreen';
+import WargaLayananScreen from './src/screens/warga/WargaLayananScreen';
 import WargaLayananSuratScreen from './src/screens/warga/WargaLayananSuratScreen';
 import WargaSuratFormScreen from './src/screens/warga/WargaSuratFormScreen';
 import WargaSuratCustomScreen from './src/screens/warga/WargaSuratCustomScreen';
@@ -66,6 +67,7 @@ export default function App() {
             <Stack.Screen name="WargaKontakDarurat" component={WargaKontakDaruratScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaKontribusiSaya" component={WargaKontribusiSayaScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaRiwayatTransaksi" component={WargaRiwayatTransaksiScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="WargaLayanan" component={WargaLayananScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaLayananSurat" component={WargaLayananSuratScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaSuratForm" component={WargaSuratFormScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WargaSuratCustom" component={WargaSuratCustomScreen} options={{ animation: 'slide_from_right' }} />
