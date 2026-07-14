@@ -67,6 +67,9 @@ export const rtService = {
       bank_name?: string | null;
       bank_account_name?: string | null;
       bank_account_number?: string | null;
+      kelurahan?: string | null;
+      kecamatan?: string | null;
+      kota?: string | null;
     },
   ): Promise<RtUnit> {
     const { data, error } = await supabase
@@ -380,6 +383,9 @@ export const rtService = {
       birth_place: clean(applicant?.birthPlace),
       birth_date: clean(applicant?.birthDate),
       occupation: clean(applicant?.occupation),
+      gender: clean(applicant?.gender),
+      religion: clean(applicant?.religion),
+      marital_status: clean(applicant?.maritalStatus),
     });
     if (error) throw error;
   },

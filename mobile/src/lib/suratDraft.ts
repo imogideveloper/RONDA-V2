@@ -10,6 +10,24 @@ export interface SuratDraftContext {
   rtName: string;
   address: string; // alamat RT dari Setting RT
   ketuaName: string;
+  kelurahan?: string | null;
+  kecamatan?: string | null;
+  kota?: string | null;
+}
+
+/** "Kelurahan X, Kecamatan Y, Kota Z" bila terisi; jika tidak, pakai nama RT. */
+export function lokasiRt(ctx: {
+  rtName: string;
+  kelurahan?: string | null;
+  kecamatan?: string | null;
+  kota?: string | null;
+}): string {
+  const parts = [
+    ctx.kelurahan && ctx.kelurahan.trim() !== '' ? `Kelurahan ${ctx.kelurahan.trim()}` : null,
+    ctx.kecamatan && ctx.kecamatan.trim() !== '' ? `Kecamatan ${ctx.kecamatan.trim()}` : null,
+    ctx.kota && ctx.kota.trim() !== '' ? `Kota ${ctx.kota.trim()}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : ctx.rtName;
 }
 
 export interface SuratDraft {
@@ -20,13 +38,9 @@ export interface SuratDraft {
   penutup: string;
 }
 
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-
-function nomorSurat(rtNumber: string, rwNumber: string | null): string {
-  const now = new Date();
-  const bulan = ROMAN[now.getMonth() + 1];
-  const rw = rwNumber ?? '00';
-  return `___/RT.${rtNumber}/RW.${rw}/${bulan}/${now.getFullYear()}`;
+function nomorSurat(rtNumber: string): string {
+  const mm = String(new Date().getMonth() + 1).padStart(2, '0');
+  return `SR-${rtNumber}/${mm}/___`;
 }
 
 // Kata kunci -> jenis baku (menampung katalog + alias + custom).
@@ -43,7 +57,7 @@ function normalizeType(t: string): 'domisili' | 'tidak_mampu' | 'skck' | 'usaha'
 export function buildSuratDraft(ctx: SuratDraftContext): SuratDraft {
   const rw = ctx.rwNumber ?? '-';
   const pembuka =
-    `Yang bertanda tangan di bawah ini, Ketua RT ${ctx.rtNumber} RW ${rw}, ${ctx.rtName}, ` +
+    `Yang bertanda tangan di bawah ini, Ketua RT ${ctx.rtNumber} RW ${rw}, ${lokasiRt(ctx)}, ` +
     `dengan ini menerangkan dengan sebenarnya bahwa:`;
   const penutup =
     'Demikian surat ini kami buat dengan sebenarnya, agar dapat dipergunakan sebagaimana mestinya. ' +
@@ -97,5 +111,5 @@ export function buildSuratDraft(ctx: SuratDraftContext): SuratDraft {
       ];
   }
 
-  return { heading, nomor: nomorSurat(ctx.rtNumber, rw === '-' ? null : rw), pembuka, isi, penutup };
+  return { heading, nomor: nomorSurat(ctx.rtNumber), pembuka, isi, penutup };
 }

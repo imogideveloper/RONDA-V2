@@ -37,7 +37,7 @@ import {
 } from '../../types/models';
 import { formatRupiah } from '../../config/theme';
 import { greetingByTime, formatDateShort, daysLateFromPeriodKey } from '../../lib/date';
-import { announcementActive, billActive, suratActive } from '../../lib/papanInfo';
+import { announcementActive, billActive, suratOnBoard } from '../../lib/papanInfo';
 
 interface Props {
   profile: Profile;
@@ -193,7 +193,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
       });
     }
 
-    for (const s of data.mySuratRequests.filter(suratActive)) {
+    for (const s of data.mySuratRequests.filter(suratOnBoard)) {
       out.push({
         accentColor: wargaColors.primaryGreen,
         icon: 'home-outline',

@@ -29,10 +29,18 @@ export function announcementActive(a: Announcement): boolean {
   return a.eventDate >= startOfToday();
 }
 
-/** Surat aktif bila belum lewat SURAT_ACTIVE_DAYS sejak diajukan. */
+/** Surat aktif bila belum lewat SURAT_ACTIVE_DAYS sejak diajukan (dipakai arsip "Permohonan Saya"). */
 export function suratActive(s: SuratRequest): boolean {
   const days = (Date.now() - s.createdAt.getTime()) / 86_400_000;
   return days <= SURAT_ACTIVE_DAYS;
+}
+
+/**
+ * Surat tampil di Papan Info beranda HANYA pada tanggal pengajuannya (hari ini).
+ * Begitu lewat tanggal itu, surat hilang dari beranda dan berpindah ke arsip "Surat Disetujui".
+ */
+export function suratOnBoard(s: SuratRequest): boolean {
+  return s.createdAt >= startOfToday();
 }
 
 /** Tagihan aktif bila periode = bulan sekarang atau mendatang. */

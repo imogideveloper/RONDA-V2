@@ -9,6 +9,7 @@ import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { WargaSuratFormStepper } from '../../components/warga/SuratWidgets';
 import { wargaCardStyle, wargaText } from '../../components/warga/wargaUi';
 import { wargaInitialsFromName } from '../../components/warga/DashboardWidgets';
+import { SuratLetterPreview, SuratLetterData } from '../../components/warga/SuratLetterPreview';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
 import type { RootStackParamList } from '../../navigation/types';
@@ -34,17 +35,24 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
   const [familyIndex, setFamilyIndex] = useState(0);
   const [keperluanIndex, setKeperluanIndex] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [nik, setNik] = useState('');
-  const [birthPlace, setBirthPlace] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [occupation, setOccupation] = useState('');
+  // "Diri Sendiri" auto-terisi dari data diri di profil (jika sudah diisi).
+  const [nik, setNik] = useState(profile.nik ?? '');
+  const [birthPlace, setBirthPlace] = useState(profile.birthPlace ?? '');
+  const [birthDate, setBirthDate] = useState(profile.birthDate ?? '');
+  const [occupation, setOccupation] = useState(profile.occupation ?? '');
+  const [gender, setGender] = useState(profile.gender ?? '');
+  const [religion, setReligion] = useState(profile.religion ?? '');
+  const [maritalStatus, setMaritalStatus] = useState(profile.maritalStatus ?? '');
 
   const chooseSelf = () => {
     setForSelf(true);
-    setNik('');
-    setBirthPlace('');
-    setBirthDate('');
-    setOccupation('');
+    setNik(profile.nik ?? '');
+    setBirthPlace(profile.birthPlace ?? '');
+    setBirthDate(profile.birthDate ?? '');
+    setOccupation(profile.occupation ?? '');
+    setGender(profile.gender ?? '');
+    setReligion(profile.religion ?? '');
+    setMaritalStatus(profile.maritalStatus ?? '');
   };
 
   const chooseFamily = (i: number) => {
@@ -55,10 +63,28 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
     setBirthPlace(m.birthPlace);
     setBirthDate(m.birthDate);
     setOccupation(m.occupation);
+    setGender(m.gender);
+    setReligion(m.religion);
+    setMaritalStatus('');
   };
 
   const address = rt.address?.trim() || `${rt.name}, RT ${rt.rtNumber}`;
   const selectedKeperluan = keperluanIndex == null ? '' : suratItem.keperluanOptions[keperluanIndex];
+
+  const letterData: SuratLetterData = {
+    rt,
+    suratType: suratItem.suratTypeKey,
+    wargaName: forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name,
+    purpose: selectedKeperluan,
+    ketuaName: '',
+    nik,
+    birthPlace,
+    birthDate,
+    occupation,
+    gender,
+    religion,
+    maritalStatus,
+  };
 
   const buildPurpose = () => {
     const subject = forSelf
@@ -79,6 +105,9 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
         birthPlace,
         birthDate,
         occupation,
+        gender,
+        religion,
+        maritalStatus,
       });
       onSubmitted?.();
       navigation.goBack();
@@ -178,25 +207,42 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
             ))}
           </>
         ) : (
-          <View style={[wargaCardStyle(16), { padding: 16 }]}>
-            <Text style={wargaText.sectionTitle}>Ringkasan permohonan</Text>
-            <View style={{ height: 12 }} />
-            <PreviewRow label="Jenis surat" value={suratItem.title} />
-            <PreviewRow label="Untuk" value={forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name} />
-            <PreviewRow label="Keperluan" value={selectedKeperluan} />
-            <PreviewRow label="Estimasi" value={suratItem.sla} />
-            <View style={styles.divider} />
-            <Text style={[wargaText.greeting, { fontSize: 12, lineHeight: 17 }]}>
+          <>
+            <View style={styles.summaryBox}>
+              <SummaryLine label="Nama" value={forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name} />
+              <SummaryLine label="NIK" value={nik.trim() || '—'} />
+              <SummaryLine label="Keperluan" value={selectedKeperluan} />
+              <SummaryLine label="Untuk" value={forSelf ? 'Diri Sendiri' : 'Anggota Keluarga'} />
+            </View>
+            <View style={styles.warnBox}>
+              <Icon name="alert-circle-outline" size={16} color="#B45309" />
+              <Text style={styles.warnText}>Periksa isi surat dengan teliti sebelum mengajukan.</Text>
+            </View>
+            <SuratLetterPreview data={letterData} showSignature={false} />
+            <Text style={[wargaText.greeting, { fontSize: 12, lineHeight: 17, marginTop: 12 }]}>
               Setelah dikirim, permohonan akan ditinjau Ketua RT. Anda bisa cek status di tab Permohonan Saya.
+              Kop & tanda tangan mengikuti Pengaturan RT.
             </Text>
-          </View>
+          </>
         )}
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} style={styles.bottomBarWrap}>
-        <Pressable onPress={submitting ? undefined : onPrimary} style={[styles.bottomBar, submitting && { opacity: 0.6 }]}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.bottomBarText}>{step === 0 ? 'Lanjut Preview' : 'Kirim Permohonan'}</Text>}
-        </Pressable>
+        {step === 1 ? (
+          <View style={styles.bottomRow}>
+            <Pressable onPress={submitting ? undefined : () => setStep(0)} style={styles.editBtn}>
+              <Icon name="create-outline" size={18} color={colors.textPrimary} />
+              <Text style={styles.editText}>Edit</Text>
+            </Pressable>
+            <Pressable onPress={submitting ? undefined : submit} style={[styles.bottomBar, styles.ajukanBtn, submitting && { opacity: 0.6 }]}>
+              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.bottomBarText}>Ajukan Surat</Text>}
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={onPrimary} style={styles.bottomBar}>
+            <Text style={styles.bottomBarText}>Lanjut Preview</Text>
+          </Pressable>
+        )}
       </SafeAreaView>
     </SafeAreaView>
   );
@@ -248,10 +294,11 @@ function SuratUntukCard({ selected, onPress, icon, title, sub }: { selected: boo
   );
 }
 
-function PreviewRow({ label, value }: { label: string; value: string }) {
+function SummaryLine({ label, value }: { label: string; value: string }) {
   return (
-    <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-      <Text style={[wargaText.greeting, { fontSize: 12, width: 100 }]}>{label}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+      <Icon name="checkmark-circle" size={16} color={wargaColors.primaryGreen} />
+      <Text style={{ fontSize: 13, color: colors.textSecondary }}>{label}:</Text>
       <Text style={{ flex: 1, fontWeight: '600', fontSize: 13, color: colors.textPrimary }}>{value}</Text>
     </View>
   );
@@ -280,7 +327,14 @@ const styles = StyleSheet.create({
   keperluan: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14, marginTop: 8 },
   keperluanText: { flex: 1, marginLeft: 12, fontWeight: '500', fontSize: 14, color: colors.textPrimary },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
+  summaryBox: { backgroundColor: wargaColors.lightGreen, borderRadius: 14, padding: 14, marginBottom: 12 },
+  warnBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF3C7', borderRadius: 12, padding: 12, marginBottom: 14 },
+  warnText: { flex: 1, fontSize: 12, color: '#92400E' },
   bottomBarWrap: { backgroundColor: wargaColors.bgColor },
   bottomBar: { marginHorizontal: 20, marginVertical: 8, height: 48, borderRadius: 14, backgroundColor: '#3B82F6', alignItems: 'center', justifyContent: 'center' },
   bottomBarText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 20, marginVertical: 8 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 48, paddingHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  editText: { color: colors.textPrimary, fontWeight: '600', fontSize: 15 },
+  ajukanBtn: { flex: 1, marginHorizontal: 0, marginVertical: 0, backgroundColor: wargaColors.primaryGreen },
 });

@@ -12,10 +12,12 @@ export function WargaSuratHeroCard({
   jenisCount,
   pendingCount,
   approvedCount,
+  onAddTap,
 }: {
   jenisCount: number;
   pendingCount: number;
   approvedCount: number;
+  onAddTap?: () => void;
 }) {
   return (
     <View style={styles.hero}>
@@ -32,9 +34,9 @@ export function WargaSuratHeroCard({
               : 'Ajukan surat untuk keperluan administrasi'}
           </Text>
         </View>
-        <View style={styles.heroIcon}>
-          <Icon name="clipboard-outline" size={32} color="#fff" />
-        </View>
+        <Pressable style={styles.heroIcon} onPress={onAddTap} hitSlop={8}>
+          <Icon name="add" size={32} color="#fff" />
+        </Pressable>
       </View>
       <View style={styles.pillRow}>
         <Pill icon="document-text-outline" label={`${jenisCount} Jenis`} />
@@ -68,7 +70,7 @@ export function WargaSuratSegmentToggle({
   return (
     <View style={styles.segment}>
       <SegTab index={0} label="Permohonan Saya" badge={pendingBadge} active={selected === 0} onPress={() => onChanged(0)} />
-      <SegTab index={1} label="Surat Disetujui" badge={approvedBadge} active={selected === 1} onPress={() => onChanged(1)} />
+      <SegTab index={1} label="Riwayat" badge={approvedBadge} active={selected === 1} onPress={() => onChanged(1)} />
     </View>
   );
 }

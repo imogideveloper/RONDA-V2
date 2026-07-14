@@ -147,6 +147,13 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
         initialName={profile.fullName}
         initialPhone={profile.phone}
         initialAvatarUrl={profile.avatarUrl}
+        initialNik={profile.nik}
+        initialBirthPlace={profile.birthPlace}
+        initialBirthDate={profile.birthDate}
+        initialOccupation={profile.occupation}
+        initialGender={profile.gender}
+        initialReligion={profile.religion}
+        initialMaritalStatus={profile.maritalStatus}
         onClose={() => setEditing(false)}
         onSaved={onSaved}
       />

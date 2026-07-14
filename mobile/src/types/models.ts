@@ -21,6 +21,14 @@ export interface Profile {
   avatarUrl: string | null;
   isActive: boolean;
   createdAt: Date;
+  // Data diri (diisi sekali, dipakai auto-isi surat) — lihat migrasi 016 & 017
+  nik: string | null;
+  birthPlace: string | null;
+  birthDate: string | null;
+  occupation: string | null;
+  gender: string | null;
+  religion: string | null;
+  maritalStatus: string | null;
 }
 
 export function profileFromMap(map: Row): Profile {
@@ -34,6 +42,13 @@ export function profileFromMap(map: Row): Profile {
     avatarUrl: (map.avatar_url as string) ?? null,
     isActive: (map.is_active as boolean) ?? true,
     createdAt: createdRaw ? new Date(createdRaw) : new Date(),
+    nik: (map.nik as string) ?? null,
+    birthPlace: (map.birth_place as string) ?? null,
+    birthDate: (map.birth_date as string) ?? null,
+    occupation: (map.occupation as string) ?? null,
+    gender: (map.gender as string) ?? null,
+    religion: (map.religion as string) ?? null,
+    maritalStatus: (map.marital_status as string) ?? null,
   };
 }
 
@@ -62,6 +77,9 @@ export interface RtUnit {
   bankName: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
+  kelurahan: string | null;
+  kecamatan: string | null;
+  kota: string | null;
 }
 
 export function rtUnitFromMap(map: Row): RtUnit {
@@ -81,6 +99,9 @@ export function rtUnitFromMap(map: Row): RtUnit {
     bankName: (map.bank_name as string) ?? null,
     bankAccountName: (map.bank_account_name as string) ?? null,
     bankAccountNumber: (map.bank_account_number as string) ?? null,
+    kelurahan: (map.kelurahan as string) ?? null,
+    kecamatan: (map.kecamatan as string) ?? null,
+    kota: (map.kota as string) ?? null,
   };
 }
 
@@ -238,12 +259,16 @@ export interface SuratRequest {
   purpose: string;
   status: string;
   createdAt: Date;
+  updatedAt: Date | null;
   userName: string | null;
-  // Data pemohon (diisi warga saat mengajukan) — lihat migrasi 015
+  // Data pemohon (diisi warga saat mengajukan) — lihat migrasi 015 & 017
   nik: string | null;
   birthPlace: string | null;
   birthDate: string | null;
   occupation: string | null;
+  gender: string | null;
+  religion: string | null;
+  maritalStatus: string | null;
 }
 
 export function suratRequestFromMap(map: Row): SuratRequest {
@@ -254,11 +279,15 @@ export function suratRequestFromMap(map: Row): SuratRequest {
     purpose: map.purpose as string,
     status: map.status as string,
     createdAt: new Date(map.created_at),
+    updatedAt: map.updated_at ? new Date(map.updated_at) : null,
     userName: profiles && typeof profiles === 'object' ? (profiles.full_name ?? null) : null,
     nik: (map.nik as string) ?? null,
     birthPlace: (map.birth_place as string) ?? null,
     birthDate: (map.birth_date as string) ?? null,
     occupation: (map.occupation as string) ?? null,
+    gender: (map.gender as string) ?? null,
+    religion: (map.religion as string) ?? null,
+    maritalStatus: (map.marital_status as string) ?? null,
   };
 }
 
@@ -267,6 +296,9 @@ export interface SuratApplicant {
   birthPlace?: string;
   birthDate?: string;
   occupation?: string;
+  gender?: string;
+  religion?: string;
+  maritalStatus?: string;
 }
 
 export const suratIsPending = (s: SuratRequest): boolean => s.status === 'pending';

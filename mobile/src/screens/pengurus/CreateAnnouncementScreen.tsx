@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -89,13 +88,35 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>Pilih judul (template)</Text>
-          <Pressable style={styles.dropdown} onPress={() => setPickerOpen(true)}>
-            <Icon name="document-text-outline" size={18} color={wargaColors.primaryGreen} />
-            <Text style={[styles.dropdownText, title === '' && { color: colors.textHint }]} numberOfLines={1}>
-              {title === '' ? 'Pilih judul pengumuman…' : title}
-            </Text>
-            <Icon name="chevron-down" size={18} color={colors.textSecondary} />
-          </Pressable>
+          <View style={[styles.selectWrap, pickerOpen && { zIndex: 100 }]}>
+            <Pressable style={[styles.dropdown, pickerOpen && styles.dropdownOpen]} onPress={() => setPickerOpen((o) => !o)}>
+              <Icon name="document-text-outline" size={18} color={wargaColors.primaryGreen} />
+              <Text style={[styles.dropdownText, title === '' && { color: colors.textHint }]} numberOfLines={1}>
+                {title === '' ? 'Pilih judul pengumuman…' : title}
+              </Text>
+              <Icon name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+            </Pressable>
+            {pickerOpen && (
+              <View style={styles.menu}>
+                <ScrollView style={{ maxHeight: 280 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                  {ANNOUNCEMENT_TEMPLATES.map((t) => {
+                    const selected = title === t.title;
+                    return (
+                      <Pressable key={t.title} style={[styles.optionRow, selected && styles.optionRowActive]} onPress={() => applyTemplate(t)}>
+                        <Icon name="megaphone-outline" size={16} color={wargaColors.primaryGreen} />
+                        <Text style={[styles.optionText, selected && { color: wargaColors.primaryGreen, fontWeight: '600' }]}>{t.title}</Text>
+                        {selected && <Icon name="checkmark" size={16} color={wargaColors.primaryGreen} />}
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable style={styles.optionRow} onPress={() => { setTitle(''); setContent(''); setPickerOpen(false); }}>
+                    <Icon name="create-outline" size={16} color={colors.textSecondary} />
+                    <Text style={[styles.optionText, { color: colors.textSecondary }]}>Judul lain (tulis sendiri)</Text>
+                  </Pressable>
+                </ScrollView>
+              </View>
+            )}
+          </View>
           <Text style={styles.helperSmall}>Pilih dari daftar — judul & isi terisi otomatis, lalu bisa diedit.</Text>
 
           <Text style={styles.label}>Judul</Text>
@@ -140,30 +161,6 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
           <PrimaryButton label={saving ? 'Menyimpan...' : 'Publikasikan'} onPress={submit} loading={saving} />
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
-        <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPickerOpen(false)} />
-          <SafeAreaView edges={['bottom']} style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Text style={[wargaText.sectionTitle, { textAlign: 'center', marginBottom: 4 }]}>Pilih Judul Pengumuman</Text>
-            <Text style={[styles.helperSmall, { textAlign: 'center', marginBottom: 8 }]}>Isi akan terisi otomatis sesuai judul.</Text>
-            <ScrollView style={{ maxHeight: 420 }}>
-              {ANNOUNCEMENT_TEMPLATES.map((t) => (
-                <Pressable key={t.title} style={styles.templateRow} onPress={() => applyTemplate(t)}>
-                  <Icon name="megaphone-outline" size={18} color={wargaColors.primaryGreen} />
-                  <Text style={styles.templateText}>{t.title}</Text>
-                  <Icon name="chevron-forward" size={16} color={colors.textSecondary} />
-                </Pressable>
-              ))}
-              <Pressable style={styles.templateRow} onPress={() => { setTitle(''); setContent(''); setPickerOpen(false); }}>
-                <Icon name="create-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.templateText, { color: colors.textSecondary }]}>Judul lain (tulis sendiri)</Text>
-              </Pressable>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -195,27 +192,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
   },
+  dropdownOpen: { borderColor: wargaColors.primaryGreen },
   dropdownText: { flex: 1, fontSize: 15, color: colors.textPrimary },
   helperSmall: { fontSize: 12, color: colors.textSecondary, marginTop: 6 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalSheet: {
+  selectWrap: { position: 'relative' },
+  menu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 6,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+    zIndex: 200,
   },
-  modalHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 14 },
-  templateRow: {
+  optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  templateText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500' },
+  optionRowActive: { backgroundColor: wargaColors.lightGreen },
+  optionText: { flex: 1, fontSize: 14, color: colors.textPrimary },
   imageBox: {
     width: '100%',
     backgroundColor: wargaColors.lightGreen,

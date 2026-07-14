@@ -1,5 +1,5 @@
 // Setting RT untuk Ketua RT: alamat, rekening bank, kop surat, tanda tangan, QRIS.
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -19,6 +19,7 @@ import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { WargaCard, wargaText } from '../../components/warga/wargaUi';
 import { PrimaryButton } from '../../components/Card';
 import { Icon } from '../../components/Icon';
+import { SignaturePad, SignaturePadRef } from '../../components/warga/SignaturePad';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
 import { storageService, PickedImage, RtAssetKind } from '../../services/storageService';
@@ -35,12 +36,19 @@ export default function RtSettingsScreen({ route }: Props) {
 
   const [rt, setRt] = useState<RtUnit>(initialRt);
   const [address, setAddress] = useState(initialRt.address ?? '');
+  const [kelurahan, setKelurahan] = useState(initialRt.kelurahan ?? '');
+  const [kecamatan, setKecamatan] = useState(initialRt.kecamatan ?? '');
+  const [kota, setKota] = useState(initialRt.kota ?? '');
   const [bankName, setBankName] = useState(initialRt.bankName ?? '');
   const [bankAccountName, setBankAccountName] = useState(initialRt.bankAccountName ?? '');
   const [bankAccountNumber, setBankAccountNumber] = useState(initialRt.bankAccountNumber ?? '');
   const [kopLocal, setKopLocal] = useState<PickedImage | null>(null);
   const [sigLocal, setSigLocal] = useState<PickedImage | null>(null);
   const [qrisLocal, setQrisLocal] = useState<PickedImage | null>(null);
+  const [kopRemoved, setKopRemoved] = useState(false);
+  const [sigRemoved, setSigRemoved] = useState(false);
+  const [qrisRemoved, setQrisRemoved] = useState(false);
+  const sigPadRef = useRef<SignaturePadRef>(null);
   const [saving, setSaving] = useState(false);
 
   const pick = async (setter: (f: PickedImage) => void) => {
@@ -51,25 +59,32 @@ export default function RtSettingsScreen({ route }: Props) {
   const save = async () => {
     setSaving(true);
     try {
-      const uploads: Array<[RtAssetKind, PickedImage | null, keyof RtUnit]> = [
-        ['kop', kopLocal, 'kopSuratUrl'],
-        ['signature', sigLocal, 'signatureUrl'],
-        ['qris', qrisLocal, 'qrisUrl'],
-      ];
-      let kopUrl = rt.kopSuratUrl;
-      let sigUrl = rt.signatureUrl;
-      let qrisUrl = rt.qrisUrl;
-      for (const [kind, file] of uploads) {
-        if (!file) continue;
-        const url = await storageService.uploadRtAsset(rt.id, kind, file);
-        if (kind === 'kop') kopUrl = url;
-        else if (kind === 'signature') sigUrl = url;
-        else qrisUrl = url;
+      let kopUrl = kopRemoved ? null : rt.kopSuratUrl;
+      let sigUrl = sigRemoved ? null : rt.signatureUrl;
+      let qrisUrl = qrisRemoved ? null : rt.qrisUrl;
+      if (kopLocal) kopUrl = await storageService.uploadRtAsset(rt.id, 'kop', kopLocal);
+      if (qrisLocal) qrisUrl = await storageService.uploadRtAsset(rt.id, 'qris', qrisLocal);
+
+      // Tanda tangan: dari upload gambar, atau dari gambar-tangan (papan).
+      if (sigLocal) {
+        sigUrl = await storageService.uploadRtAsset(rt.id, 'signature', sigLocal);
+      } else {
+        const drawn = await sigPadRef.current?.getPngDataUrl();
+        if (drawn) {
+          sigUrl = await storageService.uploadRtAsset(rt.id, 'signature', {
+            uri: drawn,
+            fileName: 'signature.png',
+            mimeType: 'image/png',
+          });
+        }
       }
 
       const clean = (s: string) => (s.trim() === '' ? null : s.trim());
       const updated = await rtService.updateRtSettings(rt.id, {
         address: clean(address),
+        kelurahan: clean(kelurahan),
+        kecamatan: clean(kecamatan),
+        kota: clean(kota),
         kop_surat_url: kopUrl,
         signature_url: sigUrl,
         qris_url: qrisUrl,
@@ -81,6 +96,10 @@ export default function RtSettingsScreen({ route }: Props) {
       setKopLocal(null);
       setSigLocal(null);
       setQrisLocal(null);
+      setKopRemoved(false);
+      setSigRemoved(false);
+      setQrisRemoved(false);
+      sigPadRef.current?.clear();
       onSaved?.(updated);
       toast.success('Setting RT disimpan');
       navigation.goBack();
@@ -121,75 +140,112 @@ export default function RtSettingsScreen({ route }: Props) {
               style={[styles.input, styles.multiline]}
               value={address}
               onChangeText={setAddress}
-              placeholder="Contoh: Jl. Melati No. 1, RT 01 RW 02, Kel. Cipayung"
+              placeholder="Contoh: Jl. Melati No. 1, RT 01 RW 02"
               placeholderTextColor={colors.textHint}
               multiline
             />
-          </WargaCard>
-
-          {/* Rekening Bank */}
-          <WargaCard style={{ marginBottom: 16 }}>
-            <Text style={wargaText.sectionTitle}>Rekening Bank</Text>
-            <Text style={styles.hint}>Untuk pembayaran iuran via transfer.</Text>
-            <Text style={styles.label}>Nama Bank</Text>
-            <TextInput
-              style={styles.input}
-              value={bankName}
-              onChangeText={setBankName}
-              placeholder="Contoh: BCA / BRI / Mandiri"
-              placeholderTextColor={colors.textHint}
-            />
-            <Text style={styles.label}>Nama Pemilik Rekening</Text>
-            <TextInput
-              style={styles.input}
-              value={bankAccountName}
-              onChangeText={setBankAccountName}
-              placeholder="Nama sesuai buku tabungan"
-              placeholderTextColor={colors.textHint}
-            />
-            <Text style={styles.label}>Nomor Rekening</Text>
-            <TextInput
-              style={styles.input}
-              value={bankAccountNumber}
-              onChangeText={setBankAccountNumber}
-              placeholder="Contoh: 1234567890"
-              placeholderTextColor={colors.textHint}
-              keyboardType="number-pad"
-            />
+            <Text style={styles.label}>Kelurahan / Desa</Text>
+            <TextInput style={styles.input} value={kelurahan} onChangeText={setKelurahan} placeholder="Contoh: Sukamaju" placeholderTextColor={colors.textHint} />
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Kecamatan</Text>
+                <TextInput style={styles.input} value={kecamatan} onChangeText={setKecamatan} placeholder="Contoh: Cilodong" placeholderTextColor={colors.textHint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Kota / Kabupaten</Text>
+                <TextInput style={styles.input} value={kota} onChangeText={setKota} placeholder="Contoh: Depok" placeholderTextColor={colors.textHint} />
+              </View>
+            </View>
           </WargaCard>
 
           {/* Kop Surat */}
           <ImageField
             title="Kop Surat"
             hint="Gambar kop (logo + header) untuk surat pengantar."
-            currentUrl={rt.kopSuratUrl}
+            currentUrl={kopRemoved ? null : rt.kopSuratUrl}
             local={kopLocal}
             aspectRatio={3}
-            onPick={() => pick(setKopLocal)}
+            onPick={() => { setKopRemoved(false); pick(setKopLocal); }}
             onClear={() => setKopLocal(null)}
+            onRemove={() => { setKopLocal(null); setKopRemoved(true); }}
           />
 
-          {/* Tanda Tangan Digital */}
-          <ImageField
-            title="Tanda Tangan Digital"
-            hint="Gambar tanda tangan Ketua RT (latar transparan/putih)."
-            currentUrl={rt.signatureUrl}
-            local={sigLocal}
-            aspectRatio={2.4}
-            onPick={() => pick(setSigLocal)}
-            onClear={() => setSigLocal(null)}
-          />
+          {/* Tanda Tangan Digital — gambar langsung / upload */}
+          <WargaCard style={{ marginBottom: 16 }}>
+            <Text style={wargaText.sectionTitle}>Tanda Tangan Digital</Text>
+            <Text style={styles.hint}>Gambar tanda tangan langsung di kotak (jari/mouse), atau upload gambar.</Text>
+            {sigLocal ? (
+              <>
+                <View style={[styles.preview, { aspectRatio: 2.4 }]}>
+                  <Image source={{ uri: sigLocal.uri }} style={styles.previewImg} resizeMode="contain" />
+                </View>
+                <View style={styles.imgActions}>
+                  <Pressable onPress={() => pick(setSigLocal)} hitSlop={6} style={styles.imgAction}>
+                    <Icon name="cloud-upload-outline" size={16} color={wargaColors.primaryGreen} />
+                    <Text style={styles.imgActionText}>Ganti gambar</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setSigLocal(null)} hitSlop={6} style={styles.imgAction}>
+                    <Icon name="create-outline" size={16} color={wargaColors.primaryGreen} />
+                    <Text style={styles.imgActionText}>Gambar tangan</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.pendingNote}>Gambar baru akan diunggah saat disimpan.</Text>
+              </>
+            ) : (
+              <>
+                <SignaturePad ref={sigPadRef} />
+                <View style={styles.imgActions}>
+                  <Pressable onPress={() => sigPadRef.current?.clear()} hitSlop={6} style={styles.imgAction}>
+                    <Icon name="refresh" size={16} color={wargaColors.primaryGreen} />
+                    <Text style={styles.imgActionText}>Bersihkan</Text>
+                  </Pressable>
+                  <Pressable onPress={() => pick(setSigLocal)} hitSlop={6} style={styles.imgAction}>
+                    <Icon name="cloud-upload-outline" size={16} color={wargaColors.primaryGreen} />
+                    <Text style={styles.imgActionText}>Upload gambar</Text>
+                  </Pressable>
+                </View>
+                {!sigRemoved && rt.signatureUrl && (
+                  <>
+                    <Text style={styles.pendingNote}>Tanda tangan tersimpan (dipakai jika kotak dikosongkan):</Text>
+                    <View style={[styles.preview, { aspectRatio: 2.4, marginTop: 6 }]}>
+                      <Image source={{ uri: rt.signatureUrl }} style={styles.previewImg} resizeMode="contain" />
+                    </View>
+                    <Pressable onPress={() => setSigRemoved(true)} hitSlop={6} style={[styles.imgAction, { marginTop: 8 }]}>
+                      <Icon name="close-circle-outline" size={16} color={wargaColors.dangerRed} />
+                      <Text style={[styles.imgActionText, { color: wargaColors.dangerRed }]}>Hapus tanda tangan tersimpan</Text>
+                    </Pressable>
+                  </>
+                )}
+                {sigRemoved && (
+                  <Text style={styles.pendingNote}>Tanda tangan akan dihapus saat disimpan.</Text>
+                )}
+              </>
+            )}
+          </WargaCard>
 
-          {/* QRIS */}
-          <ImageField
-            title="Gambar QRIS"
-            hint="Kode QRIS untuk pembayaran iuran warga."
-            currentUrl={rt.qrisUrl}
-            local={qrisLocal}
-            aspectRatio={1}
-            onPick={() => pick(setQrisLocal)}
-            onClear={() => setQrisLocal(null)}
-          />
+          {/* Pembayaran Iuran — Rekening Bank + QRIS (jadi satu) */}
+          <WargaCard style={{ marginBottom: 16 }}>
+            <Text style={wargaText.sectionTitle}>Pembayaran Iuran</Text>
+            <Text style={styles.hint}>Rekening bank & QRIS untuk pembayaran iuran warga.</Text>
+            <Text style={styles.label}>Nama Bank</Text>
+            <TextInput style={styles.input} value={bankName} onChangeText={setBankName} placeholder="Contoh: BCA / BRI / Mandiri" placeholderTextColor={colors.textHint} />
+            <Text style={styles.label}>Nama Pemilik Rekening</Text>
+            <TextInput style={styles.input} value={bankAccountName} onChangeText={setBankAccountName} placeholder="Nama sesuai buku tabungan" placeholderTextColor={colors.textHint} />
+            <Text style={styles.label}>Nomor Rekening</Text>
+            <TextInput style={styles.input} value={bankAccountNumber} onChangeText={setBankAccountNumber} placeholder="Contoh: 1234567890" placeholderTextColor={colors.textHint} keyboardType="number-pad" />
+            <View style={styles.cardDivider} />
+            <ImageField
+              bare
+              title="Gambar QRIS"
+              hint="Kode QRIS untuk pembayaran iuran warga."
+              currentUrl={qrisRemoved ? null : rt.qrisUrl}
+              local={qrisLocal}
+              aspectRatio={1}
+              onPick={() => { setQrisRemoved(false); pick(setQrisLocal); }}
+              onClear={() => setQrisLocal(null)}
+              onRemove={() => { setQrisLocal(null); setQrisRemoved(true); }}
+            />
+          </WargaCard>
 
           <View style={{ height: 8 }} />
           <PrimaryButton label="Simpan Pengaturan" onPress={save} loading={saving} />
@@ -208,6 +264,8 @@ function ImageField({
   aspectRatio,
   onPick,
   onClear,
+  onRemove,
+  bare,
 }: {
   title: string;
   hint: string;
@@ -216,10 +274,14 @@ function ImageField({
   aspectRatio: number;
   onPick: () => void;
   onClear: () => void;
+  onRemove?: () => void;
+  bare?: boolean;
 }) {
   const uri = local?.uri ?? currentUrl ?? undefined;
+  const Wrapper: any = bare ? View : WargaCard;
+  const wrapperStyle = bare ? { marginTop: 4 } : { marginBottom: 16 };
   return (
-    <WargaCard style={{ marginBottom: 16 }}>
+    <Wrapper style={wrapperStyle}>
       <Text style={wargaText.sectionTitle}>{title}</Text>
       <Text style={styles.hint}>{hint}</Text>
       <Pressable onPress={onPick} style={[styles.preview, { aspectRatio }]}>
@@ -237,15 +299,23 @@ function ImageField({
           <Icon name="cloud-upload-outline" size={16} color={wargaColors.primaryGreen} />
           <Text style={styles.imgActionText}>{uri ? 'Ganti' : 'Pilih'} gambar</Text>
         </Pressable>
-        {local && (
+        {local ? (
           <Pressable onPress={onClear} hitSlop={6} style={styles.imgAction}>
             <Icon name="close-circle-outline" size={16} color={wargaColors.dangerRed} />
             <Text style={[styles.imgActionText, { color: wargaColors.dangerRed }]}>Batal</Text>
           </Pressable>
+        ) : (
+          uri != null &&
+          onRemove && (
+            <Pressable onPress={onRemove} hitSlop={6} style={styles.imgAction}>
+              <Icon name="close-circle-outline" size={16} color={wargaColors.dangerRed} />
+              <Text style={[styles.imgActionText, { color: wargaColors.dangerRed }]}>Hapus</Text>
+            </Pressable>
+          )
         )}
       </View>
       {local && <Text style={styles.pendingNote}>Gambar baru akan diunggah saat disimpan.</Text>}
-    </WargaCard>
+    </Wrapper>
   );
 }
 
@@ -254,6 +324,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   hint: { fontSize: 12, color: colors.textSecondary, marginTop: 4, marginBottom: 8 },
+  cardDivider: { height: 1, backgroundColor: colors.border, marginTop: 16, marginBottom: 8 },
   label: { fontSize: 13, color: colors.textSecondary, marginTop: 14, marginBottom: 6 },
   input: {
     borderWidth: 1,

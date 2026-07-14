@@ -6,6 +6,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +27,13 @@ interface Props {
   initialName: string;
   initialPhone: string;
   initialAvatarUrl?: string | null;
+  initialNik?: string | null;
+  initialBirthPlace?: string | null;
+  initialBirthDate?: string | null;
+  initialOccupation?: string | null;
+  initialGender?: string | null;
+  initialReligion?: string | null;
+  initialMaritalStatus?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -36,6 +44,13 @@ export function EditProfileModal({
   initialName,
   initialPhone,
   initialAvatarUrl,
+  initialNik,
+  initialBirthPlace,
+  initialBirthDate,
+  initialOccupation,
+  initialGender,
+  initialReligion,
+  initialMaritalStatus,
   onClose,
   onSaved,
 }: Props) {
@@ -44,6 +59,13 @@ export function EditProfileModal({
   const [phone, setPhone] = useState(initialPhone);
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(initialAvatarUrl);
   const [local, setLocal] = useState<PickedImage | null>(null);
+  const [nik, setNik] = useState(initialNik ?? '');
+  const [birthPlace, setBirthPlace] = useState(initialBirthPlace ?? '');
+  const [birthDate, setBirthDate] = useState(initialBirthDate ?? '');
+  const [occupation, setOccupation] = useState(initialOccupation ?? '');
+  const [gender, setGender] = useState(initialGender ?? '');
+  const [religion, setReligion] = useState(initialReligion ?? '');
+  const [maritalStatus, setMaritalStatus] = useState(initialMaritalStatus ?? '');
   const [saving, setSaving] = useState(false);
 
   const pick = async (from: 'gallery' | 'camera') => {
@@ -66,7 +88,15 @@ export function EditProfileModal({
     try {
       let url = avatarUrl ?? undefined;
       if (local) url = await storageService.uploadProfileAvatar(userId, local);
-      await authService.updateMyProfile(name.trim(), phone.trim(), url);
+      await authService.updateMyProfile(name.trim(), phone.trim(), url, {
+        nik,
+        birthPlace,
+        birthDate,
+        occupation,
+        gender,
+        religion,
+        maritalStatus,
+      });
       onSaved();
       onClose();
     } catch (e: any) {
@@ -83,6 +113,7 @@ export function EditProfileModal({
         <SafeAreaView edges={['bottom']} style={styles.sheet}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.handle} />
+            <ScrollView style={{ maxHeight: 520 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Text style={[wargaText.sectionTitle, { fontSize: 18, textAlign: 'center' }]}>Edit Profil</Text>
             <Text style={[wargaText.greeting, { textAlign: 'center', marginTop: 8 }]}>
               Ubah data dan foto profil Anda
@@ -98,10 +129,7 @@ export function EditProfileModal({
               />
               <View style={{ flexDirection: 'row', gap: 16, marginTop: 8 }}>
                 <Pressable onPress={() => pick('gallery')}>
-                  <Text style={styles.link}>Galeri</Text>
-                </Pressable>
-                <Pressable onPress={() => pick('camera')}>
-                  <Text style={styles.link}>Kamera</Text>
+                  <Text style={styles.link}>Pilih dari Galeri</Text>
                 </Pressable>
               </View>
             </View>
@@ -112,6 +140,50 @@ export function EditProfileModal({
             <Text style={styles.label}>Nomor HP</Text>
             <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="Nomor HP" placeholderTextColor={colors.textHint} />
 
+            <Text style={styles.dataDiriTitle}>Data Diri untuk Surat</Text>
+            <Text style={styles.dataDiriHint}>Diisi sekali — dipakai otomatis saat mengajukan surat.</Text>
+
+            <Text style={styles.label}>NIK</Text>
+            <TextInput style={styles.input} value={nik} onChangeText={setNik} keyboardType="number-pad" placeholder="16 digit NIK" placeholderTextColor={colors.textHint} />
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Tempat Lahir</Text>
+                <TextInput style={styles.input} value={birthPlace} onChangeText={setBirthPlace} placeholder="Contoh: Bogor" placeholderTextColor={colors.textHint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Tanggal Lahir</Text>
+                <TextInput style={styles.input} value={birthDate} onChangeText={setBirthDate} placeholder="12 Mei 1990" placeholderTextColor={colors.textHint} />
+              </View>
+            </View>
+
+            <Text style={styles.label}>Pekerjaan</Text>
+            <TextInput style={styles.input} value={occupation} onChangeText={setOccupation} placeholder="Contoh: Wiraswasta" placeholderTextColor={colors.textHint} />
+
+            <Text style={styles.label}>Jenis Kelamin</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {['Laki-laki', 'Perempuan'].map((g) => (
+                <Pressable
+                  key={g}
+                  onPress={() => setGender(g)}
+                  style={[styles.genderBtn, gender === g && styles.genderBtnActive]}
+                >
+                  <Text style={[styles.genderText, gender === g && { color: '#fff' }]}>{g}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Agama</Text>
+                <TextInput style={styles.input} value={religion} onChangeText={setReligion} placeholder="Contoh: Islam" placeholderTextColor={colors.textHint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Status</Text>
+                <TextInput style={styles.input} value={maritalStatus} onChangeText={setMaritalStatus} placeholder="Kawin / Belum Kawin" placeholderTextColor={colors.textHint} />
+              </View>
+            </View>
+
             <View style={{ height: 20 }} />
             {saving ? (
               <View style={styles.savingBtn}>
@@ -120,6 +192,7 @@ export function EditProfileModal({
             ) : (
               <PrimaryButton label="Simpan Perubahan" onPress={save} />
             )}
+            </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </View>
@@ -139,6 +212,11 @@ const styles = StyleSheet.create({
   },
   handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 16 },
   link: { color: wargaColors.primaryGreen, fontWeight: '600' },
+  dataDiriTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, marginTop: 22 },
+  dataDiriHint: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  genderBtn: { flex: 1, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  genderBtnActive: { backgroundColor: wargaColors.primaryGreen, borderColor: wargaColors.primaryGreen },
+  genderText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   label: { fontSize: 13, color: colors.textSecondary, marginTop: 16, marginBottom: 6 },
   input: {
     borderWidth: 1,

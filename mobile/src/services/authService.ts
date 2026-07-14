@@ -89,15 +89,38 @@ export const authService = {
   },
 
   // ── Profil ──────────────────────────────────────────────────────
-  async updateMyProfile(fullName: string, phone: string, avatarUrl?: string): Promise<void> {
+  async updateMyProfile(
+    fullName: string,
+    phone: string,
+    avatarUrl?: string,
+    personal?: {
+      nik?: string;
+      birthPlace?: string;
+      birthDate?: string;
+      occupation?: string;
+      gender?: string;
+      religion?: string;
+      maritalStatus?: string;
+    },
+  ): Promise<void> {
     const user = await this.currentUser();
     if (user == null) return;
 
+    const clean = (s?: string) => (s && s.trim() !== '' ? s.trim() : null);
     const payload: Record<string, any> = {
       full_name: fullName.trim(),
       phone: phone.trim(),
     };
     if (avatarUrl != null) payload.avatar_url = avatarUrl;
+    if (personal) {
+      payload.nik = clean(personal.nik);
+      payload.birth_place = clean(personal.birthPlace);
+      payload.birth_date = clean(personal.birthDate);
+      payload.occupation = clean(personal.occupation);
+      payload.gender = clean(personal.gender);
+      payload.religion = clean(personal.religion);
+      payload.marital_status = clean(personal.maritalStatus);
+    }
 
     await supabase.from('profiles').update(payload).eq('id', user.id);
     await supabase.auth.updateUser({ data: payload });

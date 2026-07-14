@@ -4,17 +4,16 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { alertDialog, confirmDialog } from '../../lib/dialog';
 import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, wargaColors } from '../../config/theme';
+import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { WargaCard, wargaText } from '../../components/warga/wargaUi';
 import { WargaSectionHeader } from '../../components/warga/BerandaWidgets';
 import {
-  WargaAccessRow,
-  WargaInfoRow,
   WargaMembershipCard,
   WargaMenuTile,
-  WargaPageHeader,
-  WargaProfileHeaderCard,
+  WargaProfileAvatar,
 } from '../../components/warga/DashboardWidgets';
+import { rtService } from '../../services/rtService';
+import { SURAT_CATALOG } from '../../lib/suratCatalog';
 import { EditProfileModal } from '../../components/warga/EditProfileModal';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -24,7 +23,7 @@ import { authService } from '../../services/authService';
 import { rtMembershipService } from '../../services/rtMembershipService';
 import { wargaHomeLoader } from '../../services/wargaHomeLoader';
 import { RtMembership, membershipDisplayLabel, membershipLocationLine } from '../../types/membership';
-import { Profile, RtUnit, profileRoleLabel, rtDisplayLabel } from '../../types/models';
+import { Profile, RtUnit, iuranIsPaid, rtDisplayLabel } from '../../types/models';
 
 interface Props {
   profile: Profile;
@@ -40,13 +39,20 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
   const [memberships, setMemberships] = useState<RtMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [kontribusi, setKontribusi] = useState(0);
 
   const loadMemberships = useCallback(async () => {
     setLoading(true);
     const list = await rtMembershipService.listMyMemberships();
     setMemberships(list);
     setLoading(false);
-  }, []);
+    try {
+      const bills = await rtService.getIuranRecords(rt.id, profile.id);
+      setKontribusi(bills.filter(iuranIsPaid).reduce((s, b) => s + b.amount, 0));
+    } catch {
+      // abaikan
+    }
+  }, [rt.id, profile.id]);
 
   useEffect(() => {
     loadMemberships();
@@ -86,26 +92,84 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
   const confirmLogout = () =>
     confirmDialog('Keluar?', 'Anda akan keluar dari aplikasi.', onLogout, 'Keluar');
 
-  const parseKelurahan = () => {
-    const addr = rt.address ?? rt.name;
-    return addr.includes('-') ? addr.split('-')[0].trim() : rt.name;
-  };
+  const waPhone = profile.phone.length > 0 ? profile.phone : 'Belum diisi';
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <WargaPageHeader title="Profil" subtitle="Ketuk foto untuk ubah profil & unggah foto" />
-        <View style={{ height: 16 }} />
+        {/* Kartu profil */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerBand} />
+          <View style={{ marginTop: -44 }}>
+            <WargaProfileAvatar
+              imageUrl={profile.avatarUrl}
+              fullName={profile.fullName}
+              radius={44}
+              showCameraBadge
+              onTap={() => setEditing(true)}
+            />
+          </View>
+          <Text style={styles.headerName}>{profile.fullName}</Text>
+          <View style={styles.roleBadge}>
+            <Icon name="person" size={12} color={wargaColors.primaryGreen} />
+            <Text style={styles.roleBadgeText}>Warga</Text>
+            <View style={styles.onlineDot} />
+          </View>
+          <Text style={styles.headerSub}>{rtDisplayLabel(rt)} · {rt.name}</Text>
+        </View>
 
-        <WargaProfileHeaderCard
-          fullName={profile.fullName}
-          phone={profile.phone.length > 0 ? profile.phone : '-'}
-          roleLabel={profileRoleLabel(profile)}
-          avatarUrl={profile.avatarUrl}
-          onEditProfile={() => setEditing(true)}
+        {/* 3 stat tiles */}
+        <View style={styles.statRow}>
+          <StatTile icon="home" color="#185FA5" value={rtDisplayLabel(rt)} label="RT / RW" />
+          <StatTile icon="card" color={wargaColors.primaryGreen} value={formatRupiah(kontribusi)} label="KONTRIBUSI" />
+          <StatTile icon="document-text" color="#5B21B6" value={`${SURAT_CATALOG.length} jenis`} label="SURAT" />
+        </View>
+
+        {/* Informasi */}
+        <Text style={styles.sectionLabel}>Informasi</Text>
+        <WargaMenuTile
+          icon="notifications-outline"
+          iconBg={wargaColors.lightGreen}
+          iconColor={wargaColors.primaryGreen}
+          title="Notifikasi"
+          subtitle="Aktif"
+          onTap={() => toast.success('Pengaturan notifikasi segera hadir')}
+        />
+        <WargaMenuTile
+          icon="shield-outline"
+          iconBg={wargaColors.accentBlue}
+          iconColor="#185FA5"
+          title="Privasi & Keamanan"
+          subtitle="Kelola keamanan akun"
+          onTap={() => toast.success('Pengaturan privasi segera hadir')}
+        />
+        <WargaMenuTile
+          icon="home-outline"
+          iconBg={wargaColors.accentYellow}
+          iconColor="#BA7517"
+          title="Alamat"
+          subtitle={rt.address ?? rt.name}
+          onTap={() => setEditing(true)}
+        />
+        <WargaMenuTile
+          icon="call"
+          iconBg={wargaColors.lightGreen}
+          iconColor={wargaColors.primaryGreen}
+          title="WhatsApp"
+          subtitle={waPhone}
+          onTap={() => setEditing(true)}
+        />
+        <WargaMenuTile
+          icon="document-text"
+          iconBg="#F3E8FF"
+          iconColor="#5B21B6"
+          title="Surat Keterangan"
+          subtitle={`${SURAT_CATALOG.length} jenis tersedia`}
+          onTap={() => navigation.navigate('WargaLayananSurat', { profile, rt })}
         />
 
-        <View style={{ height: 24 }} />
+        {/* Keanggotaan RT (multi-RT) */}
+        <View style={{ height: 12 }} />
         <WargaSectionHeader
           title="Keanggotaan RT"
           trailing="+ Gabung RT Lain"
@@ -120,7 +184,6 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
           }
         />
         <View style={{ height: 10 }} />
-
         {loading ? null : memberships.length === 0 ? (
           <WargaMembershipCard displayLabel={rtDisplayLabel(rt)} subtitle={`${rt.name} · Warga`} isActive />
         ) : (
@@ -136,43 +199,6 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
         )}
         <Text style={styles.italic}>Iuran dihitung terpisah untuk setiap RT</Text>
 
-        <WargaCard style={{ marginBottom: 12 }}>
-          <Text style={wargaText.sectionTitle}>Cara kerja role di RONDA</Text>
-          <View style={{ height: 12 }} />
-          <RoleRow icon="shield" color={wargaColors.primaryGreen} title="Ketua RT" desc="Membuat RT & verifikasi warga." />
-          <RoleRow icon="wallet" color="#BA7517" title="Bendahara" desc="Ditunjuk Ketua RT, kelola kas." />
-          <RoleRow icon="person" color="#185FA5" title="Warga" desc="Gabung pakai kode. Bisa di beberapa RT." />
-        </WargaCard>
-
-        <WargaCard style={{ marginBottom: 12 }}>
-          <Text style={wargaText.sectionTitle}>Akses Anda sebagai Warga</Text>
-          <View style={{ height: 4 }} />
-          <WargaAccessRow label="Kelola Iuran" active={false} />
-          <WargaAccessRow label="Kelola Kas RT" active={false} />
-          <WargaAccessRow label="Buat Pengumuman" active={false} />
-          <WargaAccessRow label="Kelola Data Warga" active={false} />
-          <WargaAccessRow label="Lihat Laporan Kas" active={false} />
-          <WargaAccessRow label="Request Surat" active />
-        </WargaCard>
-
-        <WargaCard style={{ marginBottom: 16 }}>
-          <Text style={wargaText.sectionTitle}>Informasi RT</Text>
-          <View style={{ height: 8 }} />
-          <WargaInfoRow label="RT / RW" value={rtDisplayLabel(rt)} />
-          <WargaInfoRow label="Kelurahan" value={parseKelurahan()} />
-          <WargaInfoRow label="Kecamatan" value={rt.address ?? '-'} />
-          <WargaInfoRow label="Kota" value={rt.name} />
-          <WargaInfoRow label="Jumlah Warga" value={`${rt.memberCount} orang`} />
-        </WargaCard>
-
-        <WargaMenuTile
-          icon="document-text"
-          iconBg={wargaColors.accentLime}
-          iconColor="#3B6D11"
-          title="Surat Pengantar"
-          subtitle="Ajukan & cek status surat"
-          onTap={() => navigation.navigate('WargaLayananSurat', { profile, rt })}
-        />
         <WargaMenuTile
           icon="help-circle"
           iconBg={wargaColors.accentBlue}
@@ -195,6 +221,13 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
         initialName={profile.fullName}
         initialPhone={profile.phone}
         initialAvatarUrl={profile.avatarUrl}
+        initialNik={profile.nik}
+        initialBirthPlace={profile.birthPlace}
+        initialBirthDate={profile.birthDate}
+        initialOccupation={profile.occupation}
+        initialGender={profile.gender}
+        initialReligion={profile.religion}
+        initialMaritalStatus={profile.maritalStatus}
         onClose={() => setEditing(false)}
         onSaved={onSaved}
       />
@@ -202,26 +235,14 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
   );
 }
 
-function RoleRow({
-  icon,
-  color,
-  title,
-  desc,
-}: {
-  icon: IconName;
-  color: string;
-  title: string;
-  desc: string;
-}) {
+function StatTile({ icon, color, value, label }: { icon: IconName; color: string; value: string; label: string }) {
   return (
-    <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-      <View style={[styles.roleIcon, { backgroundColor: color + '1F' }]}>
+    <View style={styles.statTile}>
+      <View style={[styles.statIcon, { backgroundColor: color + '1F' }]}>
         <Icon name={icon} size={18} color={color} />
       </View>
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text style={styles.roleTitle}>{title}</Text>
-        <Text style={[wargaText.greeting, { fontSize: 12, lineHeight: 17 }]}>{desc}</Text>
-      </View>
+      <Text style={styles.statValue} numberOfLines={1}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -230,8 +251,46 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: wargaColors.bgColor },
   scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 100 },
   italic: { fontSize: 12, fontStyle: 'italic', color: colors.textSecondary, marginTop: 4, marginBottom: 16 },
-  roleIcon: { padding: 6, borderRadius: 8, alignSelf: 'flex-start' },
-  roleTitle: { fontWeight: '600', fontSize: 13, color: colors.textPrimary },
+  headerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    paddingBottom: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  headerBand: { height: 68, alignSelf: 'stretch', backgroundColor: '#DBEAFE' },
+  headerName: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginTop: 8 },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: wargaColors.lightGreen,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginTop: 8,
+  },
+  roleBadgeText: { fontSize: 12, fontWeight: '600', color: wargaColors.primaryGreen },
+  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: wargaColors.primaryGreen, marginLeft: 2 },
+  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 8 },
+  statRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  statTile: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+  },
+  statIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  statValue: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  statLabel: { fontSize: 10, color: colors.textSecondary, marginTop: 2, letterSpacing: 0.3 },
+  sectionLabel: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 10 },
   logout: {
     flexDirection: 'row',
     alignItems: 'center',

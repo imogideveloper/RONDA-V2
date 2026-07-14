@@ -69,8 +69,6 @@ export function WargaPengurusContactCard({
           {profile.phone.length > 0 ? profile.phone : 'Nomor belum diisi'}
         </Text>
       </View>
-      <ContactBtn icon="call" color={roleColor} onTap={onCall} />
-      <View style={{ width: 8 }} />
       <ContactBtn icon="chatbubble-ellipses" color={wargaColors.primaryGreen} onTap={onWhatsApp} />
     </View>
   );
