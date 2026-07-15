@@ -21,6 +21,7 @@ export type RootStackParamList = {
   SuratPengantar: WargaParams;
   DataWarga: WargaParams;
   FamilyMembers: { rt: RtUnit; headId: string; headName: string };
+  LaporanBulanan: WargaParams;
   RtSettings: { profile: Profile; rt: RtUnit; onSaved?: (rt: RtUnit) => void };
   CreateRt: { onSuccess?: () => void };
   JoinRt: { additionalMembership?: boolean; onSuccess?: () => void };

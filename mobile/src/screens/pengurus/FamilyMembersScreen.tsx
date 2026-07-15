@@ -156,10 +156,16 @@ export default function FamilyMembersScreen({ route }: Props) {
             )}
             <Text style={styles.scanText}>{ocrBusy ? (ocrMsg || 'Memproses…') : 'Scan KK (Foto / PDF)'}</Text>
           </Pressable>
-          <Text style={styles.scanHint}>
-            Upload foto/scan Kartu Keluarga — anggota terdeteksi otomatis, lalu periksa & rapikan
-            sebelum simpan. Butuh internet; hasil OCR bisa meleset.
-          </Text>
+          <View style={styles.scanNote}>
+            <Text style={styles.scanPoint}>
+              • Paling akurat: <Text style={styles.scanHintBold}>KK digital (PDF asli dari Dukcapil)</Text> — anggota keluarga terisi otomatis.
+            </Text>
+            <Text style={styles.scanPoint}>• Foto/scan gambar dibaca via OCR — hasilnya bisa meleset.</Text>
+            <Text style={styles.scanPoint}>
+              • Selalu <Text style={styles.scanHintBold}>periksa & rapikan</Text> sebelum simpan.
+            </Text>
+            <Text style={styles.scanPoint}>• Butuh koneksi internet.</Text>
+          </View>
           <View style={{ height: 12 }} />
           <Pressable onPress={() => setEditing('new')} style={styles.addBtn}>
             <Icon name="add-circle-outline" size={20} color={wargaColors.primaryGreen} />
@@ -415,7 +421,9 @@ const styles = StyleSheet.create({
     paddingVertical: 13, borderRadius: 14, backgroundColor: wargaColors.primaryGreen,
   },
   scanText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  scanHint: { fontSize: 11, color: colors.textSecondary, marginTop: 8, lineHeight: 16 },
+  scanNote: { marginTop: 10, gap: 4 },
+  scanPoint: { fontSize: 11, color: colors.textSecondary, lineHeight: 16 },
+  scanHintBold: { fontWeight: '700', color: colors.textPrimary },
   reviewHint: { fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: 12 },
   reviewRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 12,

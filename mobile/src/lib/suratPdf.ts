@@ -55,20 +55,21 @@ function printHtmlWeb(html: string): Promise<void> {
   });
 }
 
+/** Cetak/unduh HTML A4 apa pun sebagai PDF (web: iframe print; native: file + share). */
+export async function exportHtmlAsPdf(html: string, dialogTitle = 'Simpan / Bagikan'): Promise<void> {
+  if (Platform.OS === 'web') {
+    await printHtmlWeb(html);
+    return;
+  }
+  const { uri } = await Print.printToFileAsync({ html });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle });
+  }
+}
+
 export async function exportSuratPdf(
   data: SuratLetterData,
   opts?: { showSignature?: boolean },
 ): Promise<void> {
-  const html = buildSuratHtml(data, opts);
-
-  if (Platform.OS === 'web') {
-    // Web: cetak lewat iframe berisi HANYA HTML surat (bukan halaman app), tanpa popup.
-    await printHtmlWeb(html);
-    return;
-  }
-
-  const { uri } = await Print.printToFileAsync({ html });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Simpan / Bagikan Surat' });
-  }
+  await exportHtmlAsPdf(buildSuratHtml(data, opts), 'Simpan / Bagikan Surat');
 }

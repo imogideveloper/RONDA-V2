@@ -57,6 +57,31 @@ export const familyService = {
     return (data ?? []).map(familyMemberFromMap);
   },
 
+  /** Jumlah total anggota keluarga (jiwa tambahan) di sebuah RT. */
+  async countInRt(rtId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('family_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('rt_id', rtId);
+    if (error) return 0;
+    return count ?? 0;
+  },
+
+  /** Jumlah anggota keluarga per kepala keluarga di sebuah RT (untuk hitung jiwa/KK). */
+  async countByHeadInRt(rtId: string): Promise<Record<string, number>> {
+    const { data, error } = await supabase
+      .from('family_members')
+      .select('head_user_id')
+      .eq('rt_id', rtId);
+    if (error) return {};
+    const map: Record<string, number> = {};
+    for (const row of data ?? []) {
+      const h = (row as any).head_user_id as string | null;
+      if (h) map[h] = (map[h] ?? 0) + 1;
+    }
+    return map;
+  },
+
   async addMember(rtId: string, headUserId: string, input: FamilyMemberInput): Promise<void> {
     const { error } = await supabase
       .from('family_members')
