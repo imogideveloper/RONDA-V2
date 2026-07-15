@@ -60,6 +60,11 @@ export const profileIsBendahara = (p: Profile): boolean => profileRole(p) === 'b
 export const profileRoleLabel = (p: Profile): string => roleLabel(profileRole(p));
 
 // ── RT Unit ───────────────────────────────────────────────────────
+export interface IuranComponent {
+  name: string;
+  amount: number;
+}
+
 export interface RtUnit {
   id: string;
   name: string;
@@ -80,6 +85,8 @@ export interface RtUnit {
   kelurahan: string | null;
   kecamatan: string | null;
   kota: string | null;
+  iuranAmount: number;
+  iuranComponents: IuranComponent[];
 }
 
 export function rtUnitFromMap(map: Row): RtUnit {
@@ -102,6 +109,12 @@ export function rtUnitFromMap(map: Row): RtUnit {
     kelurahan: (map.kelurahan as string) ?? null,
     kecamatan: (map.kecamatan as string) ?? null,
     kota: (map.kota as string) ?? null,
+    iuranAmount: map.iuran_amount != null ? Number(map.iuran_amount) : 50000,
+    iuranComponents: Array.isArray(map.iuran_components)
+      ? (map.iuran_components as any[])
+          .map((c) => ({ name: String(c?.name ?? ''), amount: Number(c?.amount ?? 0) }))
+          .filter((c) => c.name !== '')
+      : [],
   };
 }
 

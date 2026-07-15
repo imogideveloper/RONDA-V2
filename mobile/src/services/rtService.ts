@@ -70,6 +70,8 @@ export const rtService = {
       kelurahan?: string | null;
       kecamatan?: string | null;
       kota?: string | null;
+      iuran_amount?: number;
+      iuran_components?: { name: string; amount: number }[];
     },
   ): Promise<RtUnit> {
     const { data, error } = await supabase

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon, type IconName } from '../Icon';
 import * as Clipboard from 'expo-clipboard';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
-import { IuranRecord, iuranIsAwaiting, iuranIsPaid, iuranPaymentMethodLabel } from '../../types/models';
+import { IuranComponent, IuranRecord, iuranIsAwaiting, iuranIsPaid, iuranPaymentMethodLabel } from '../../types/models';
 import {
   formatRupiahCompact,
   iuranDueDateLabel,
@@ -200,13 +200,17 @@ export function WargaIuranEwalletTile({
 export function WargaIuranHistoryCard({
   record,
   onPay,
+  components,
 }: {
   record: IuranRecord;
   onPay?: () => void;
+  components?: IuranComponent[];
 }) {
   const paid = iuranIsPaid(record);
   const awaiting = iuranIsAwaiting(record);
   const title = iuranPeriodTitle(record);
+  const compsTotal = (components ?? []).reduce((s, c) => s + c.amount, 0);
+  const showBreakdown = (components?.length ?? 0) > 0 && Math.round(compsTotal) === Math.round(record.amount);
 
   let iconBg: string, iconColor: string, icon: IconName;
   let amountColor: string, subtitle: string, badge: string, badgeBg: string, badgeFg: string;
@@ -255,6 +259,16 @@ export function WargaIuranHistoryCard({
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.histTitle}>{title}</Text>
         <Text style={[styles.histSub, { color: iconColor }]}>{subtitle}</Text>
+        {showBreakdown && (
+          <View style={styles.breakdown}>
+            {components!.map((c, i) => (
+              <View key={i} style={styles.breakdownRow}>
+                <Text style={styles.breakdownName} numberOfLines={1}>{c.name}</Text>
+                <Text style={styles.breakdownAmt}>{formatRupiahCompact(c.amount)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={[styles.histAmount, { color: amountColor }]}>
@@ -387,6 +401,10 @@ const styles = StyleSheet.create({
   histTitle: { fontWeight: '600', fontSize: 14, color: colors.textPrimary },
   histSub: { fontSize: 11, marginTop: 2 },
   histAmount: { fontWeight: '700', fontSize: 14 },
+  breakdown: { marginTop: 8, gap: 3 },
+  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  breakdownName: { flex: 1, fontSize: 12, color: colors.textSecondary },
+  breakdownAmt: { fontSize: 12, fontWeight: '600', color: colors.textPrimary },
   histBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginTop: 4 },
   histBadgeText: { fontSize: 9, fontWeight: '700' },
 

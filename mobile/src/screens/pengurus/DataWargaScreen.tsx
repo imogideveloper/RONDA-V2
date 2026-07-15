@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -36,6 +37,21 @@ import { profileIsKetua } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DataWarga'>;
+
+// Unduh teks sebagai file di web (buat Blob + klik anchor download tersembunyi).
+function downloadCsvWeb(filename: string, content: string) {
+  const doc: any = (globalThis as any).document;
+  if (!doc) return;
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = doc.createElement('a');
+  a.href = url;
+  a.download = filename;
+  doc.body.appendChild(a);
+  a.click();
+  doc.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export default function DataWargaScreen({ route }: Props) {
   const { profile, rt } = route.params;
@@ -79,6 +95,12 @@ export default function DataWargaScreen({ route }: Props) {
 
   const downloadTemplate = async () => {
     setMenuOpen(false);
+    // Web: unduh file .csv sungguhan lewat mekanisme download browser.
+    if (Platform.OS === 'web') {
+      downloadCsvWeb('template_data_warga_rt.csv', TEMPLATE_CSV);
+      toast.success('Template CSV diunduh');
+      return;
+    }
     try {
       const uri = `${FileSystem.cacheDirectory}template_data_warga_rt.csv`;
       await FileSystem.writeAsStringAsync(uri, TEMPLATE_CSV);
@@ -89,7 +111,7 @@ export default function DataWargaScreen({ route }: Props) {
         toast.success('Template disalin ke clipboard');
       }
     } catch (e: any) {
-      // Fallback web/desktop: salin ke clipboard
+      // Fallback: salin ke clipboard
       await Clipboard.setStringAsync(TEMPLATE_CSV);
       toast.success('Template disalin ke clipboard');
     }

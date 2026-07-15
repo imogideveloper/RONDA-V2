@@ -28,6 +28,7 @@ import {
   Profile,
   RtUnit,
   emptyKasSummary,
+  iuranIsAwaiting,
   iuranIsPaid,
   profileIsKetua,
   rtDisplayLabel,
@@ -48,6 +49,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
   const [kas, setKas] = useState<KasSummary>(emptyKasSummary());
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [belumBayar, setBelumBayar] = useState(0);
+  const [menungguVerifikasi, setMenungguVerifikasi] = useState(0);
   const [suratPending, setSuratPending] = useState(0);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
     setKas(k);
     setAnnouncements(ann);
     setBelumBayar(bills.filter((b) => !iuranIsPaid(b)).length);
+    setMenungguVerifikasi(bills.filter(iuranIsAwaiting).length);
     if (isKetua) {
       const surat = await rtService.getSuratRequests(rt.id, true);
       setSuratPending(surat.filter(suratIsPending).length);
@@ -131,7 +134,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
         {isKetua ? (
           <KetuaQuickActionGrid
             tagihCount={belumBayar}
-            verifikasiCount={belumBayar}
+            verifikasiCount={menungguVerifikasi}
             suratPendingCount={suratPending}
             onTagih={() => onNavigateTab(1, 'tagih')}
             onVerifikasi={() => onNavigateTab(1, 'verifikasi')}

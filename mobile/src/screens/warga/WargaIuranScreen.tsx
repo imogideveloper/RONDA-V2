@@ -135,7 +135,7 @@ export function WargaIuranScreen({ profile, rt }: Props) {
                 <View key={g.key}>
                   <Text style={styles.monthHeader}>{g.label}</Text>
                   {g.items.map((b) => (
-                    <WargaIuranHistoryCard key={b.id} record={b} onPay={iuranIsUnpaid(b) ? openBayar : undefined} />
+                    <WargaIuranHistoryCard key={b.id} record={b} components={rt.iuranComponents} onPay={iuranIsUnpaid(b) ? openBayar : undefined} />
                   ))}
                 </View>
               ))}
