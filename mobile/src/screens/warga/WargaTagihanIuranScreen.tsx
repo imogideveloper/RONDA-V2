@@ -18,7 +18,7 @@ import {
 } from '../../components/warga/TagihanWidgets';
 import { rtService } from '../../services/rtService';
 import { storageService, PickedImage } from '../../services/storageService';
-import { IuranRecord, iuranIsAwaiting, iuranIsPending, rtDisplayLabel } from '../../types/models';
+import { IuranComponent, IuranRecord, iuranIsAwaiting, iuranIsPending, rtDisplayLabel } from '../../types/models';
 import { groupIuranByYearMonth, iuranPeriodTitle, maxDaysLate } from '../../lib/period';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -155,6 +155,7 @@ export default function WargaTagihanIuranScreen({ route, navigation }: Props) {
                 Hero={Hero}
                 awaiting={awaiting}
                 pending={pending}
+                components={rt.iuranComponents}
                 selectedIds={selectedIds}
                 expandedId={expandedId}
                 openYears={openYears}
@@ -184,7 +185,11 @@ export default function WargaTagihanIuranScreen({ route, navigation }: Props) {
                   <WargaCard key={b.id} radius={14} style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{ flex: 1 }}>
                       <Text style={[wargaText.sectionTitle, { fontSize: 15 }]}>{iuranPeriodTitle(b)}</Text>
-                      <Text style={[wargaText.greeting, { fontSize: 12 }]}>Keamanan + Kebersihan</Text>
+                      <Text style={[wargaText.greeting, { fontSize: 12 }]}>
+                        {rt.iuranComponents.length > 0
+                          ? rt.iuranComponents.map((c) => c.name).join(' + ')
+                          : 'Iuran warga'}
+                      </Text>
                     </View>
                     <Text style={styles.bold}>{formatRupiah(b.amount)}</Text>
                   </WargaCard>
@@ -283,11 +288,12 @@ export default function WargaTagihanIuranScreen({ route, navigation }: Props) {
 }
 
 function ListStep({
-  Hero, awaiting, pending, selectedIds, expandedId, openYears, onToggleYear, onSelect, onExpand, onToggleAll,
+  Hero, awaiting, pending, components, selectedIds, expandedId, openYears, onToggleYear, onSelect, onExpand, onToggleAll,
 }: {
   Hero: React.FC;
   awaiting: IuranRecord[];
   pending: IuranRecord[];
+  components: IuranComponent[];
   selectedIds: Set<string>;
   expandedId: string | null;
   openYears: Set<number>;
@@ -349,6 +355,7 @@ function ListStep({
                   <WargaTagihanBillTile
                     key={b.id}
                     bill={b}
+                    components={components}
                     selected={selectedIds.has(b.id)}
                     expanded={expandedId === b.id}
                     onToggleSelect={() => onSelect(b.id)}

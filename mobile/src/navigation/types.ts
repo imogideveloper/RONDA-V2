@@ -20,6 +20,7 @@ export type RootStackParamList = {
   CreateAnnouncement: { rtId: string; onCreated?: () => void };
   SuratPengantar: WargaParams;
   DataWarga: WargaParams;
+  FamilyMembers: { rt: RtUnit; headId: string; headName: string };
   RtSettings: { profile: Profile; rt: RtUnit; onSaved?: (rt: RtUnit) => void };
   CreateRt: { onSuccess?: () => void };
   JoinRt: { additionalMembership?: boolean; onSuccess?: () => void };

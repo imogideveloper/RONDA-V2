@@ -335,3 +335,36 @@ export function suratReferenceCode(s: SuratRequest, rtNumber: string): string {
   const rt = rtNumber.replace(/\D/g, '');
   return `SR-${rt}/${m}/${seq}`;
 }
+
+// ── Anggota keluarga (dikelola Ketua RT) ─────────────────────────
+export interface FamilyMember {
+  id: string;
+  rtId: string;
+  headUserId: string;
+  name: string;
+  relation: string | null;
+  nik: string | null;
+  birthPlace: string | null;
+  birthDate: string | null;
+  gender: string | null;
+  religion: string | null;
+  maritalStatus: string | null;
+  occupation: string | null;
+}
+
+export function familyMemberFromMap(map: Row): FamilyMember {
+  return {
+    id: map.id as string,
+    rtId: map.rt_id as string,
+    headUserId: map.head_user_id as string,
+    name: (map.name as string) ?? '',
+    relation: (map.relation as string) ?? null,
+    nik: (map.nik as string) ?? null,
+    birthPlace: (map.birth_place as string) ?? null,
+    birthDate: (map.birth_date as string) ?? null,
+    gender: (map.gender as string) ?? null,
+    religion: (map.religion as string) ?? null,
+    maritalStatus: (map.marital_status as string) ?? null,
+    occupation: (map.occupation as string) ?? null,
+  };
+}

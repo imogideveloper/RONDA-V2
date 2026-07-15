@@ -1,5 +1,5 @@
 // Port dari lib/pages/warga/warga_surat_form_page.dart
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,20 +12,11 @@ import { wargaInitialsFromName } from '../../components/warga/DashboardWidgets';
 import { SuratLetterPreview, SuratLetterData } from '../../components/warga/SuratLetterPreview';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
+import { familyService } from '../../services/familyService';
+import { FamilyMember } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WargaSuratForm'>;
-
-interface FamilyMember {
-  name: string; relation: string; occupation: string; nik: string;
-  birthPlace: string; birthDate: string; gender: string; religion: string;
-}
-
-const FAMILY_DEMO: FamilyMember[] = [
-  { name: 'Siti Nurhaliza', relation: 'Istri', occupation: 'Ibu Rumah Tangga', nik: '3276054203870002', birthPlace: 'Bogor', birthDate: '4 Maret 1987', gender: 'Perempuan', religion: 'Islam' },
-  { name: 'Muhammad Rizki Hidayat', relation: 'Anak', occupation: 'Pelajar', nik: '3276051205120004', birthPlace: 'Depok', birthDate: '12 Mei 2012', gender: 'Laki-laki', religion: 'Islam' },
-  { name: 'Aisyah Putri Hidayat', relation: 'Anak', occupation: 'Pelajar', nik: '3276050808140005', birthPlace: 'Depok', birthDate: '8 Agustus 2014', gender: 'Perempuan', religion: 'Islam' },
-];
 
 export default function WargaSuratFormScreen({ route, navigation }: Props) {
   const { profile, rt, suratItem, onSubmitted } = route.params;
@@ -43,6 +34,11 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
   const [gender, setGender] = useState(profile.gender ?? '');
   const [religion, setReligion] = useState(profile.religion ?? '');
   const [maritalStatus, setMaritalStatus] = useState(profile.maritalStatus ?? '');
+  const [family, setFamily] = useState<FamilyMember[]>([]);
+
+  useEffect(() => {
+    familyService.listMine().then(setFamily).catch(() => setFamily([]));
+  }, []);
 
   const chooseSelf = () => {
     setForSelf(true);
@@ -56,16 +52,20 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
   };
 
   const chooseFamily = (i: number) => {
+    const m = family[i];
+    if (!m) {
+      toast.error('Belum ada anggota keluarga. Hubungi Ketua RT untuk mendaftarkan.');
+      return;
+    }
     setForSelf(false);
     setFamilyIndex(i);
-    const m = FAMILY_DEMO[i];
-    setNik(m.nik);
-    setBirthPlace(m.birthPlace);
-    setBirthDate(m.birthDate);
-    setOccupation(m.occupation);
-    setGender(m.gender);
-    setReligion(m.religion);
-    setMaritalStatus('');
+    setNik(m.nik ?? '');
+    setBirthPlace(m.birthPlace ?? '');
+    setBirthDate(m.birthDate ?? '');
+    setOccupation(m.occupation ?? '');
+    setGender(m.gender ?? '');
+    setReligion(m.religion ?? '');
+    setMaritalStatus(m.maritalStatus ?? '');
   };
 
   const address = rt.address?.trim() || `${rt.name}, RT ${rt.rtNumber}`;
@@ -74,7 +74,7 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
   const letterData: SuratLetterData = {
     rt,
     suratType: suratItem.suratTypeKey,
-    wargaName: forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name,
+    wargaName: forSelf ? profile.fullName : (family[familyIndex]?.name ?? profile.fullName),
     purpose: selectedKeperluan,
     ketuaName: '',
     nik,
@@ -146,8 +146,8 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
                   <Text style={[wargaText.greeting, { fontSize: 12 }]}>Kepala Keluarga</Text>
                 </View>
               </View>
-              <View style={styles.fieldRow}><Field label="NAMA" value={forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name} /><Field label="NIK" value={nik || '—'} /></View>
-              <View style={styles.fieldRow}><Field label="PEKERJAAN" value={occupation || '—'} /><Field label="TTL" value={birthPlace || birthDate ? `${birthPlace || '—'}, ${birthDate || '—'}` : '—'} /></View>
+              <View style={styles.fieldRow}><Field label="NAMA" value={profile.fullName} /><Field label="NIK" value={profile.nik || '—'} /></View>
+              <View style={styles.fieldRow}><Field label="PEKERJAAN" value={profile.occupation || '—'} /><Field label="TTL" value={profile.birthPlace || profile.birthDate ? `${profile.birthPlace || '—'}, ${profile.birthDate || '—'}` : '—'} /></View>
               <View style={{ marginTop: 10 }}><Field label="ALAMAT" value={address} /></View>
             </View>
 
@@ -160,40 +160,24 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
             {!forSelf && (
               <>
                 <SectionTitle icon="create-outline" title="Data Orang dalam Surat" iconColor="#EA580C" />
-                {FAMILY_DEMO.map((m, i) => (
-                  <Pressable key={m.nik} onPress={() => chooseFamily(i)} style={[styles.familyCard, { borderColor: familyIndex === i ? '#3B82F6' : colors.border, backgroundColor: familyIndex === i ? wargaColors.accentBlue : colors.surface }]}>
+                {family.map((m, i) => (
+                  <Pressable key={m.id} onPress={() => chooseFamily(i)} style={[styles.familyCard, { borderColor: familyIndex === i ? '#3B82F6' : colors.border, backgroundColor: familyIndex === i ? wargaColors.accentBlue : colors.surface }]}>
                     <View style={styles.familyAvatar}><Text style={{ fontSize: 11, fontWeight: '600' }}>{wargaInitialsFromName(m.name)}</Text></View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={styles.bold14}>{m.name}</Text>
-                      <Text style={[wargaText.greeting, { fontSize: 12 }]}>{m.relation} · {m.occupation}</Text>
+                      <Text style={[wargaText.greeting, { fontSize: 12 }]}>{[m.relation, m.occupation].filter(Boolean).join(' · ') || '—'}</Text>
                     </View>
                     {familyIndex === i && <Icon name="checkmark-circle" size={22} color="#3B82F6" />}
                   </Pressable>
                 ))}
-                <View style={[wargaCardStyle(14), { padding: 14, marginTop: 4 }]}>
-                  <View style={styles.fieldRow}><Field label="NIK" value={FAMILY_DEMO[familyIndex].nik} /><Field label="TTL" value={`${FAMILY_DEMO[familyIndex].birthPlace}, ${FAMILY_DEMO[familyIndex].birthDate}`} /></View>
-                  <View style={styles.fieldRow}><Field label="JENIS KELAMIN" value={FAMILY_DEMO[familyIndex].gender} /><Field label="AGAMA" value={FAMILY_DEMO[familyIndex].religion} /></View>
-                </View>
+                {family[familyIndex] && (
+                  <View style={[wargaCardStyle(14), { padding: 14, marginTop: 4 }]}>
+                    <View style={styles.fieldRow}><Field label="NIK" value={family[familyIndex].nik || '—'} /><Field label="TTL" value={family[familyIndex].birthPlace || family[familyIndex].birthDate ? `${family[familyIndex].birthPlace || '—'}, ${family[familyIndex].birthDate || '—'}` : '—'} /></View>
+                    <View style={styles.fieldRow}><Field label="JENIS KELAMIN" value={family[familyIndex].gender || '—'} /><Field label="AGAMA" value={family[familyIndex].religion || '—'} /></View>
+                  </View>
+                )}
               </>
             )}
-
-            <SectionTitle icon="create-outline" title="Data Diri untuk Surat" iconColor="#EA580C" />
-            <View style={[wargaCardStyle(16), { padding: 14, marginTop: 10 }]}>
-              <Text style={styles.inputLabel}>NIK</Text>
-              <TextInput style={styles.suratInput} value={nik} onChangeText={setNik} placeholder="16 digit NIK" placeholderTextColor={colors.textHint} keyboardType="number-pad" />
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Tempat Lahir</Text>
-                  <TextInput style={styles.suratInput} value={birthPlace} onChangeText={setBirthPlace} placeholder="Contoh: Bogor" placeholderTextColor={colors.textHint} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Tanggal Lahir</Text>
-                  <TextInput style={styles.suratInput} value={birthDate} onChangeText={setBirthDate} placeholder="12 Mei 1990" placeholderTextColor={colors.textHint} />
-                </View>
-              </View>
-              <Text style={styles.inputLabel}>Pekerjaan</Text>
-              <TextInput style={styles.suratInput} value={occupation} onChangeText={setOccupation} placeholder="Contoh: Wiraswasta" placeholderTextColor={colors.textHint} />
-            </View>
 
             <SectionTitle icon="document-text-outline" title="Keperluan" iconColor={wargaColors.primaryGreen} />
             {suratItem.keperluanOptions.map((opt, i) => (
@@ -206,7 +190,7 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
         ) : (
           <>
             <View style={styles.summaryBox}>
-              <SummaryLine label="Nama" value={forSelf ? profile.fullName : FAMILY_DEMO[familyIndex].name} />
+              <SummaryLine label="Nama" value={forSelf ? profile.fullName : (family[familyIndex]?.name ?? '—')} />
               <SummaryLine label="NIK" value={nik.trim() || '—'} />
               <SummaryLine label="Keperluan" value={selectedKeperluan} />
               <SummaryLine label="Untuk" value={forSelf ? 'Diri Sendiri' : 'Anggota Keluarga'} />

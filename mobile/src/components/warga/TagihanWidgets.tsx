@@ -4,7 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon, type IconName } from '../Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
-import { IuranRecord, iuranPaymentMethodLabel } from '../../types/models';
+import { IuranComponent, IuranRecord, iuranPaymentMethodLabel } from '../../types/models';
 import { daysLateFromPeriodKey, iuranPeriodTitle } from '../../lib/period';
 import { formatDateShort } from '../../lib/date';
 import { wargaCardStyle } from './wargaUi';
@@ -62,21 +62,23 @@ export function WargaTagihanBillTile({
   bill,
   selected,
   expanded,
+  components,
   onToggleSelect,
   onToggleExpand,
 }: {
   bill: IuranRecord;
   selected: boolean;
   expanded: boolean;
+  components?: IuranComponent[];
   onToggleSelect: () => void;
   onToggleExpand: () => void;
 }) {
   const late = daysLateFromPeriodKey(bill.periodKey);
-  const half = bill.amount / 2;
-  const items = [
-    { label: 'Keamanan', amount: half, icon: 'shield-outline' as const },
-    { label: 'Kebersihan', amount: half, icon: 'sparkles-outline' as const },
-  ];
+  const compsTotal = (components ?? []).reduce((s, c) => s + c.amount, 0);
+  const useComps = (components?.length ?? 0) > 0 && Math.round(compsTotal) === Math.round(bill.amount);
+  const items = useComps
+    ? components!.map((c) => ({ label: c.name, amount: c.amount }))
+    : [{ label: 'Iuran warga', amount: bill.amount }];
 
   return (
     <View
@@ -115,9 +117,9 @@ export function WargaTagihanBillTile({
       </Pressable>
       {expanded && (
         <View style={styles.tileDetail}>
-          {items.map((it) => (
-            <View key={it.label} style={styles.lineItem}>
-              <Icon name={it.icon} size={18} color={colors.textSecondary} />
+          {items.map((it, idx) => (
+            <View key={`${it.label}-${idx}`} style={styles.lineItem}>
+              <Icon name="radio-button-off" size={16} color={colors.textHint} />
               <Text style={styles.lineLabel}>{it.label}</Text>
               <Text style={styles.lineAmount}>{formatRupiah(it.amount)}</Text>
             </View>

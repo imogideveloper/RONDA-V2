@@ -53,7 +53,7 @@ function downloadCsvWeb(filename: string, content: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export default function DataWargaScreen({ route }: Props) {
+export default function DataWargaScreen({ route, navigation }: Props) {
   const { profile, rt } = route.params;
   const toast = useToast();
   const isKetua = profileIsKetua(profile);
@@ -192,24 +192,39 @@ export default function DataWargaScreen({ route }: Props) {
                   : colors.emerald;
             const editable = isKetua && m.id !== profile.id;
             return (
-              <Pressable key={m.id} onPress={editable ? () => setEditing(m) : undefined} disabled={!editable}>
-                <WargaCard style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', padding: 14 }}>
-                  {m.avatarUrl ? (
-                    <Image source={{ uri: m.avatarUrl }} style={styles.avatarImg} />
-                  ) : (
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{m.fullName ? m.fullName[0].toUpperCase() : '?'}</Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={{ fontWeight: '600', color: colors.textPrimary }}>{m.fullName}</Text>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary }}>{m.phone}</Text>
-                    {m.blokRumah ? <Text style={{ fontSize: 12, color: colors.textHint }}>{m.blokRumah}</Text> : null}
+              <WargaCard key={m.id} style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', padding: 14 }}>
+                {m.avatarUrl ? (
+                  <Image source={{ uri: m.avatarUrl }} style={styles.avatarImg} />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{m.fullName ? m.fullName[0].toUpperCase() : '?'}</Text>
                   </View>
-                  <StatusChip label={directoryRoleLabel(m)} color={chipColor} />
-                  {editable && <Icon name="create-outline" size={18} color={colors.emerald} style={{ marginLeft: 4 }} />}
-                </WargaCard>
-              </Pressable>
+                )}
+                <Pressable
+                  onPress={editable ? () => setEditing(m) : undefined}
+                  disabled={!editable}
+                  style={{ flex: 1, marginLeft: 12 }}
+                >
+                  <Text style={{ fontWeight: '600', color: colors.textPrimary }}>{m.fullName}</Text>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>{m.phone}</Text>
+                  {m.blokRumah ? <Text style={{ fontSize: 12, color: colors.textHint }}>{m.blokRumah}</Text> : null}
+                </Pressable>
+                <StatusChip label={directoryRoleLabel(m)} color={chipColor} />
+                {isKetua && !m.isPendingImport && (
+                  <Pressable
+                    onPress={() => navigation.navigate('FamilyMembers', { rt, headId: m.id, headName: m.fullName })}
+                    hitSlop={6}
+                    style={{ padding: 6, marginLeft: 4 }}
+                  >
+                    <Icon name="people-outline" size={20} color="#3B82F6" />
+                  </Pressable>
+                )}
+                {editable && (
+                  <Pressable onPress={() => setEditing(m)} hitSlop={6} style={{ padding: 6 }}>
+                    <Icon name="create-outline" size={18} color={colors.emerald} />
+                  </Pressable>
+                )}
+              </WargaCard>
             );
           })}
         </ScrollView>

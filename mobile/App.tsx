@@ -27,6 +27,7 @@ import CreateAnnouncementScreen from './src/screens/pengurus/CreateAnnouncementS
 import SuratPengantarScreen from './src/screens/pengurus/SuratPengantarScreen';
 import SuratDraftScreen from './src/screens/pengurus/SuratDraftScreen';
 import DataWargaScreen from './src/screens/pengurus/DataWargaScreen';
+import FamilyMembersScreen from './src/screens/pengurus/FamilyMembersScreen';
 import RtSettingsScreen from './src/screens/pengurus/RtSettingsScreen';
 import CreateRtScreen from './src/screens/onboarding/CreateRtScreen';
 import JoinRtScreen from './src/screens/onboarding/JoinRtScreen';
@@ -75,6 +76,7 @@ export default function App() {
             <Stack.Screen name="CreateAnnouncement" component={CreateAnnouncementScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="SuratPengantar" component={SuratPengantarScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="DataWarga" component={DataWargaScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="FamilyMembers" component={FamilyMembersScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="RtSettings" component={RtSettingsScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="CreateRt" component={CreateRtScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JoinRt" component={JoinRtScreen} options={{ animation: 'slide_from_right' }} />

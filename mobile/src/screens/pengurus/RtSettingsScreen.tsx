@@ -14,6 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import * as DocumentPicker from 'expo-document-picker';
+import { extractPdfText } from '../../lib/pdfText';
 import { colors, formatRupiah, radius, wargaColors } from '../../config/theme';
 import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { WargaCard, wargaText } from '../../components/warga/wargaUi';
@@ -28,6 +30,12 @@ import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RtSettings'>;
 
+// "50000" -> "50.000" (titik ribuan) untuk tampilan input nominal.
+function groupThousands(digits: string): string {
+  const n = (digits || '').replace(/\D/g, '');
+  return n === '' ? '' : n.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 const IURAN_CUSTOM = 'Lainnya (ketik sendiri)';
 const IURAN_PRESETS = ['Keamanan', 'Kebersihan', 'Kas RT', 'Sampah', 'Air Bersih', 'Penerangan Jalan', 'Sosial'];
 const IURAN_OPTIONS = [...IURAN_PRESETS, IURAN_CUSTOM];
@@ -40,6 +48,7 @@ export default function RtSettingsScreen({ route }: Props) {
 
   const [rt, setRt] = useState<RtUnit>(initialRt);
   const [address, setAddress] = useState(initialRt.address ?? '');
+  const [parsingPdf, setParsingPdf] = useState(false);
   const [kelurahan, setKelurahan] = useState(initialRt.kelurahan ?? '');
   const [kecamatan, setKecamatan] = useState(initialRt.kecamatan ?? '');
   const [kota, setKota] = useState(initialRt.kota ?? '');
@@ -83,6 +92,25 @@ export default function RtSettingsScreen({ route }: Props) {
   const pick = async (setter: (f: PickedImage) => void) => {
     const file = await storageService.pickImageFromGallery();
     if (file) setter(file);
+  };
+
+  const pickAddressPdf = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
+      if (result.canceled || result.assets.length === 0) return;
+      setParsingPdf(true);
+      const text = await extractPdfText(result.assets[0].uri);
+      if (text.trim() === '') {
+        toast.error('PDF tidak berisi teks yang bisa dibaca (mungkin hasil scan).');
+        return;
+      }
+      setAddress(text.trim());
+      toast.success('Alamat terbaca dari PDF. Cek & rapikan bila perlu, lalu Simpan.');
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    } finally {
+      setParsingPdf(false);
+    }
   };
 
   const save = async () => {
@@ -179,6 +207,20 @@ export default function RtSettingsScreen({ route }: Props) {
               placeholderTextColor={colors.textHint}
               multiline
             />
+            <Pressable onPress={parsingPdf ? undefined : pickAddressPdf} style={styles.pdfBtn}>
+              <Icon
+                name={parsingPdf ? 'hourglass-outline' : 'cloud-upload-outline'}
+                size={18}
+                color={wargaColors.primaryGreen}
+              />
+              <Text style={styles.pdfBtnText}>
+                {parsingPdf ? 'Membaca PDF…' : 'Isi alamat dari PDF'}
+              </Text>
+            </Pressable>
+            <Text style={styles.hint}>
+              Upload PDF (teks asli, bukan hasil scan) berisi alamat — teksnya otomatis mengisi kolom
+              di atas. Periksa/rapikan lalu Simpan.
+            </Text>
             <Text style={styles.label}>Kelurahan / Desa</Text>
             <TextInput style={styles.input} value={kelurahan} onChangeText={setKelurahan} placeholder="Contoh: Sukamaju" placeholderTextColor={colors.textHint} />
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -235,14 +277,17 @@ export default function RtSettingsScreen({ route }: Props) {
                     />
                   )}
                 </View>
-                <TextInput
-                  style={[styles.input, { width: 100, marginTop: 0 }]}
-                  value={c.amount}
-                  onChangeText={(t) => setComp(i, { amount: t.replace(/\D/g, '') })}
-                  placeholder="0"
-                  placeholderTextColor={colors.textHint}
-                  keyboardType="number-pad"
-                />
+                <View style={styles.amountBox}>
+                  <Text style={styles.amountPrefix}>Rp</Text>
+                  <TextInput
+                    style={styles.amountInput}
+                    value={groupThousands(c.amount)}
+                    onChangeText={(t) => setComp(i, { amount: t.replace(/\D/g, '').slice(0, 7) })}
+                    placeholder="0"
+                    placeholderTextColor={colors.textHint}
+                    keyboardType="number-pad"
+                  />
+                </View>
                 <Pressable onPress={() => removeComp(i)} hitSlop={8} style={styles.compRemove}>
                   <Icon name="remove-circle-outline" size={22} color={wargaColors.dangerRed} />
                 </Pressable>
@@ -477,6 +522,33 @@ const styles = StyleSheet.create({
   },
   compOption: { paddingHorizontal: 14, paddingVertical: 11 },
   compOptionText: { fontSize: 14, color: colors.textPrimary },
+  amountBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    width: 118,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
+  },
+  amountPrefix: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  amountInput: { flex: 1, fontSize: 15, color: colors.textPrimary, padding: 0 },
+  pdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 11,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: wargaColors.primaryGreen,
+    borderStyle: 'dashed',
+  },
+  pdfBtnText: { fontSize: 13, fontWeight: '600', color: wargaColors.primaryGreen },
   addComp: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 12, paddingVertical: 4 },
   addCompText: { fontSize: 13, fontWeight: '600', color: wargaColors.primaryGreen },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
