@@ -38,7 +38,6 @@ import {
   rtDisplayLabel,
   suratIsApproved,
   suratIsRejected,
-  suratPersonName,
   suratReferenceCode,
   suratStatusLabel,
 } from '../../types/models';
@@ -179,7 +178,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
               const st = suratStatusMeta(s);
               const item = suratItemByTypeKey(s.suratType);
               return (
-                <ScrollView showsVerticalScrollIndicator={false}>
+                <View>
                   {/* Header */}
                   <View style={styles.dTitleRow}>
                     <Text style={styles.dDialogTitle}>Detail Permohonan</Text>
@@ -214,10 +213,10 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
                   </View>
                   <View style={styles.dDataCard}>
                     <View style={styles.dGrid}>
-                      <DataCell label="Nama" value={suratPersonName(s, profile.fullName)} />
-                      <DataCell label="NIK" value={s.nik} />
-                      <DataCell label="Pekerjaan" value={s.occupation} />
-                      <DataCell label="Status" value={s.maritalStatus} />
+                      <DataCell label="Nama" value={s.userName ?? profile.fullName} />
+                      <DataCell label="NIK" value={s.submitterNik} />
+                      <DataCell label="Pekerjaan" value={s.submitterOccupation} />
+                      <DataCell label="Status" value={s.submitterMaritalStatus} />
                     </View>
                     <DataCell label="Alamat" value={rt.address} full />
                   </View>
@@ -232,15 +231,14 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
                   </View>
 
                   {/* Status (warga: info, bukan aksi) */}
-                  <View style={[styles.dStatusBox, { backgroundColor: st.bg, marginTop: 18 }]}>
+                  <View style={[styles.dStatusBox, { backgroundColor: st.bg, marginTop: 14 }]}>
                     <Icon name={st.icon} size={20} color={st.color} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
                       <Text style={[styles.dStatusTitle, { color: st.color }]}>{st.title}</Text>
                       <Text style={styles.dStatusSub}>{st.sub}</Text>
                     </View>
                   </View>
-                  <View style={{ height: 12 }} />
-                </ScrollView>
+                </View>
               );
             })()}
           </View>
@@ -338,7 +336,7 @@ function suratStatusMeta(s: SuratRequest): {
 
 function DataCell({ label, value, full }: { label: string; value?: string | null; full?: boolean }) {
   return (
-    <View style={{ width: full ? '100%' : '50%', marginBottom: 10 }}>
+    <View style={{ width: full ? '100%' : '50%', marginBottom: full ? 0 : 8 }}>
       <Text style={styles.dCellLabel}>{label.toUpperCase()}</Text>
       <Text style={styles.dCellValue}>{value && value.trim() !== '' ? value : '—'}</Text>
     </View>
@@ -350,11 +348,11 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32 },
   emptyPapan: { color: colors.textSecondary, fontSize: 13, paddingVertical: 12 },
   dBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  dDialog: { width: '100%', maxWidth: 400, backgroundColor: colors.surface, borderRadius: 22, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20, maxHeight: '88%' },
-  dTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  dDialog: { width: '100%', maxWidth: 400, backgroundColor: colors.surface, borderRadius: 22, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
+  dTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   dDialogTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
-  dTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  dMini: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 14, padding: 12 },
+  dTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  dMini: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 14, padding: 10 },
   dMiniSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   dIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: wargaColors.lightGreen, alignItems: 'center', justifyContent: 'center' },
   dTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
@@ -365,15 +363,15 @@ const styles = StyleSheet.create({
   dStatusBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, marginBottom: 4 },
   dStatusTitle: { fontSize: 14, fontWeight: '700' },
   dStatusSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
-  dSectionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, marginBottom: 8 },
+  dSectionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, marginBottom: 6 },
   dSectionTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  dDataCard: { backgroundColor: colors.background, borderRadius: 14, padding: 14 },
+  dDataCard: { backgroundColor: colors.background, borderRadius: 14, padding: 12 },
   dName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   dNameSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2, marginBottom: 8 },
   dGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dCellLabel: { fontSize: 10, fontWeight: '600', color: colors.textHint, letterSpacing: 0.3 },
   dCellValue: { fontSize: 13, fontWeight: '600', color: colors.textPrimary, marginTop: 2 },
-  dKeperluanBox: { backgroundColor: colors.background, borderRadius: 14, padding: 14 },
+  dKeperluanBox: { backgroundColor: colors.background, borderRadius: 14, padding: 12 },
   dKeperluanText: { fontSize: 13, color: colors.textPrimary },
   dTanggalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
   dTanggalLabel: { fontSize: 13, color: colors.textSecondary },

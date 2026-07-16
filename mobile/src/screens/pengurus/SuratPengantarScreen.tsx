@@ -15,7 +15,6 @@ import {
   suratIsApproved,
   suratIsPending,
   suratIsRejected,
-  suratPersonName,
   suratReferenceCode,
 } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
@@ -50,7 +49,10 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
   }, [load]);
 
   const pending = requests.filter(suratIsPending);
-  const processed = requests.filter((r) => !suratIsPending(r));
+  // Diproses: yang paling baru disetujui/ditolak tampil di atas (pakai waktu proses).
+  const processed = requests
+    .filter((r) => !suratIsPending(r))
+    .sort((a, b) => (b.updatedAt ?? b.createdAt).getTime() - (a.updatedAt ?? a.createdAt).getTime());
   const list = tab === 0 ? pending : processed;
 
   const decide = async (req: SuratRequest, status: string) => {
@@ -81,7 +83,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
           </View>
           <Text style={styles.cardTitle}>{r.suratType}</Text>
           <Text style={styles.cardSub}>
-            {suratPersonName(r)} • {formatDateShort(r.createdAt)}
+            {(r.userName ?? 'Warga')} • {formatDateShort(r.createdAt)}
           </Text>
         </View>
         <View style={[styles.dot, { backgroundColor: st.color }]} />
@@ -159,7 +161,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
                   </Pressable>
                 </View>
 
-                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
+                <View>
                   <View style={styles.cardTopRow}>
                     <View style={[styles.badge, { backgroundColor: st.bg }]}>
                       <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
@@ -183,10 +185,10 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
                   </View>
                   <View style={styles.dataCard}>
                     <View style={styles.dataGrid}>
-                      <DataCell label="Nama" value={suratPersonName(detail)} />
-                      <DataCell label="NIK" value={detail.nik} />
-                      <DataCell label="Pekerjaan" value={detail.occupation} />
-                      <DataCell label="Status" value={detail.maritalStatus} />
+                      <DataCell label="Nama" value={detail.userName ?? 'Warga'} />
+                      <DataCell label="NIK" value={detail.submitterNik} />
+                      <DataCell label="Pekerjaan" value={detail.submitterOccupation} />
+                      <DataCell label="Status" value={detail.submitterMaritalStatus} />
                     </View>
                     <DataCell label="Alamat" value={rt.address} full />
                   </View>
@@ -210,7 +212,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
                     <Icon name="document-text-outline" size={18} color={wargaColors.primaryGreen} />
                     <Text style={styles.draftText}>Lihat Draft Surat</Text>
                   </Pressable>
-                </ScrollView>
+                </View>
 
                 {isKetua && suratIsPending(detail) && (
                   <View style={styles.actionRow}>
@@ -235,7 +237,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
 
 function DataCell({ label, value, full }: { label: string; value?: string | null; full?: boolean }) {
   return (
-    <View style={{ width: full ? '100%' : '50%', marginTop: full ? 10 : 0, marginBottom: full ? 0 : 12 }}>
+    <View style={{ width: full ? '100%' : '50%', marginTop: full ? 8 : 0, marginBottom: full ? 8 : 10 }}>
       <Text style={styles.cellLabel}>{label.toUpperCase()}</Text>
       <Text style={styles.cellValue}>{value && value.trim() !== '' ? value : '—'}</Text>
     </View>
@@ -298,20 +300,20 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   empty: { color: colors.textSecondary, textAlign: 'center', paddingVertical: 40 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  dialog: { width: '100%', maxWidth: 400, backgroundColor: colors.surface, borderRadius: 22, padding: 20, maxHeight: '88%' },
-  dialogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  dialog: { width: '100%', maxWidth: 400, backgroundColor: colors.surface, borderRadius: 22, padding: 18 },
+  dialogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   dialogTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   closeBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-  suratMini: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.background, borderRadius: 14, padding: 12, marginTop: 10 },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, marginBottom: 8 },
+  suratMini: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.background, borderRadius: 14, padding: 10, marginTop: 8 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, marginBottom: 6 },
   sectionLabel2: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  dataCard: { backgroundColor: colors.background, borderRadius: 14, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 2 },
+  dataCard: { backgroundColor: colors.background, borderRadius: 14, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 2 },
   dataGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   cellLabel: { fontSize: 10, fontWeight: '600', color: colors.textHint, letterSpacing: 0.3 },
   cellValue: { fontSize: 13, fontWeight: '600', color: colors.textPrimary, marginTop: 2 },
-  keperluanBox: { backgroundColor: colors.background, borderRadius: 14, padding: 14 },
+  keperluanBox: { backgroundColor: colors.background, borderRadius: 14, padding: 12 },
   keperluanText: { fontSize: 13, color: colors.textPrimary },
-  draftBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: wargaColors.primaryGreen, marginTop: 16 },
+  draftBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: wargaColors.primaryGreen, marginTop: 12 },
   draftText: { color: wargaColors.primaryGreen, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 48, borderRadius: 12 },

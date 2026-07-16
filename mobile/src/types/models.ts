@@ -274,9 +274,13 @@ export interface SuratRequest {
   createdAt: Date;
   updatedAt: Date | null;
   userName: string | null;
+  // Data pengaju/kepala keluarga (dari profil akun, via join) — untuk kartu "Pemohon"
+  submitterNik: string | null;
+  submitterOccupation: string | null;
+  submitterMaritalStatus: string | null;
   // Nama pemohon bila surat untuk anggota keluarga (null = pakai nama akun) — migrasi 021
   applicantName: string | null;
-  // Data pemohon (diisi warga saat mengajukan) — lihat migrasi 015 & 017
+  // Data subjek surat (diisi warga saat mengajukan; anggota keluarga bila dipilih) — migrasi 015 & 017
   nik: string | null;
   birthPlace: string | null;
   birthDate: string | null;
@@ -296,6 +300,9 @@ export function suratRequestFromMap(map: Row): SuratRequest {
     createdAt: new Date(map.created_at),
     updatedAt: map.updated_at ? new Date(map.updated_at) : null,
     userName: profiles && typeof profiles === 'object' ? (profiles.full_name ?? null) : null,
+    submitterNik: profiles && typeof profiles === 'object' ? (profiles.nik ?? null) : null,
+    submitterOccupation: profiles && typeof profiles === 'object' ? (profiles.occupation ?? null) : null,
+    submitterMaritalStatus: profiles && typeof profiles === 'object' ? (profiles.marital_status ?? null) : null,
     applicantName: (map.applicant_name as string) ?? null,
     nik: (map.nik as string) ?? null,
     birthPlace: (map.birth_place as string) ?? null,

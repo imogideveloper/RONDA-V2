@@ -358,7 +358,7 @@ export const rtService = {
       const userId = await currentUserId();
       let query = supabase
         .from('surat_requests')
-        .select('*, profiles(full_name)')
+        .select('*, profiles(full_name, nik, occupation, marital_status)')
         .eq('rt_id', rtId);
       if (!allRt && userId != null) query = query.eq('user_id', userId);
       const { data } = await query.order('created_at', { ascending: false }).limit(30);
