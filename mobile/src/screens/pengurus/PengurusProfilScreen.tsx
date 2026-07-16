@@ -14,6 +14,7 @@ import { useToast } from '../../components/Toast';
 import { authService } from '../../services/authService';
 import { rtService } from '../../services/rtService';
 import { wargaDirectoryService } from '../../services/wargaDirectoryService';
+import { familyService } from '../../services/familyService';
 import { Profile, RtUnit, profileIsBendahara, profileIsKetua, profileRoleLabel, rtDisplayLabel } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -42,8 +43,13 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
         // abaikan
       }
       try {
-        const dir = await wargaDirectoryService.getDirectory(rt.id);
-        setTotalWarga(dir.filter((e) => !e.isPendingImport).length);
+        // Total Warga = total jiwa: kepala keluarga terdaftar + semua anggota keluarga.
+        const [dir, anggota] = await Promise.all([
+          wargaDirectoryService.getDirectory(rt.id),
+          familyService.countInRt(rt.id).catch(() => 0),
+        ]);
+        const kk = dir.filter((e) => !e.isPendingImport).length;
+        setTotalWarga(kk + anggota);
       } catch {
         // abaikan
       }

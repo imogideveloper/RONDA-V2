@@ -10,7 +10,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { SuratLetterData, SuratLetterPreview } from '../../components/warga/SuratLetterPreview';
 import { exportSuratPdf } from '../../lib/suratPdf';
-import { suratPersonName } from '../../types/models';
+import { suratIsApproved, suratPersonName } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SuratDraft'>;
@@ -34,11 +34,14 @@ export default function SuratDraftScreen({ route }: Props) {
     maritalStatus: request.maritalStatus,
   };
 
+  // Tanda tangan hanya muncul bila surat sudah DISETUJUI.
+  const signed = suratIsApproved(request);
+
   const [downloading, setDownloading] = useState(false);
   const downloadPdf = async () => {
     setDownloading(true);
     try {
-      await exportSuratPdf(data, { showSignature: true });
+      await exportSuratPdf(data, { showSignature: signed });
     } catch (e: any) {
       toast.error(`Gagal membuat PDF: ${String(e?.message ?? e)}`);
     } finally {
@@ -50,7 +53,7 @@ export default function SuratDraftScreen({ route }: Props) {
     <SafeAreaView edges={['top']} style={styles.safe}>
       <WargaAppBar title="Draft Surat" />
       <ScrollView contentContainerStyle={styles.scroll}>
-        <SuratLetterPreview data={data} />
+        <SuratLetterPreview data={data} showSignature={signed} />
 
         <View style={styles.note}>
           <Icon name="information-circle-outline" size={16} color={colors.textSecondary} />

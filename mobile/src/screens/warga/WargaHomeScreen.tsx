@@ -230,6 +230,22 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
                     <Text style={styles.dKeperluanText}>{s.purpose || '—'}</Text>
                   </View>
 
+                  {/* Lihat draft surat (preview; TTD hanya muncul bila disetujui) */}
+                  <Pressable
+                    style={styles.dDraftBtn}
+                    onPress={() => {
+                      setDetailSurat(null);
+                      navigation.navigate('SuratDraft', {
+                        rt,
+                        request: s,
+                        ketuaName: data.ketua?.fullName ?? '',
+                      });
+                    }}
+                  >
+                    <Icon name="document-text-outline" size={18} color={wargaColors.primaryGreen} />
+                    <Text style={styles.dDraftText}>Lihat Draft Surat</Text>
+                  </Pressable>
+
                   {/* Status (warga: info, bukan aksi) */}
                   <View style={[styles.dStatusBox, { backgroundColor: st.bg, marginTop: 14 }]}>
                     <Icon name={st.icon} size={20} color={st.color} />
@@ -281,8 +297,14 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
     }
 
     for (const s of data.mySuratRequests.filter(suratOnBoard)) {
+      // Warna status: disetujui = hijau, ditolak = merah, menunggu = kuning.
+      const statusColor = suratIsApproved(s)
+        ? wargaColors.primaryGreen
+        : suratIsRejected(s)
+          ? wargaColors.dangerRed
+          : '#D97706';
       out.push({
-        accentColor: wargaColors.primaryGreen,
+        accentColor: statusColor,
         icon: 'home-outline',
         iconBg: wargaColors.accentBlue,
         iconColor: '#185FA5',
@@ -290,6 +312,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
         badgeBg: wargaColors.lightGreen,
         badgeFg: wargaColors.primaryGreen,
         metaRight: suratStatusLabel(s),
+        metaRightColor: statusColor,
         title: s.suratType,
         subtitle: s.purpose.length > 0 ? s.purpose : 'Menunggu persetujuan RT',
         onTap: () => setDetailSurat(s),
@@ -372,6 +395,8 @@ const styles = StyleSheet.create({
   dCellLabel: { fontSize: 10, fontWeight: '600', color: colors.textHint, letterSpacing: 0.3 },
   dCellValue: { fontSize: 13, fontWeight: '600', color: colors.textPrimary, marginTop: 2 },
   dKeperluanBox: { backgroundColor: colors.background, borderRadius: 14, padding: 12 },
+  dDraftBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: wargaColors.primaryGreen, marginTop: 12 },
+  dDraftText: { color: wargaColors.primaryGreen, fontWeight: '700', fontSize: 14 },
   dKeperluanText: { fontSize: 13, color: colors.textPrimary },
   dTanggalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
   dTanggalLabel: { fontSize: 13, color: colors.textSecondary },

@@ -107,7 +107,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
   const downloadPdf = async (r: SuratRequest) => {
     setDownloading(r.id);
     try {
-      await exportSuratPdf(letterDataFromRequest(r), { showSignature: true });
+      await exportSuratPdf(letterDataFromRequest(r), { showSignature: suratIsApproved(r) });
     } catch (e: any) {
       toast.error(String(e?.message ?? e));
     } finally {

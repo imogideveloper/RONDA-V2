@@ -301,6 +301,7 @@ export interface PapanStripProps {
   badgeBg: string;
   badgeFg: string;
   metaRight: string;
+  metaRightColor?: string;
   title: string;
   subtitle: string;
   onTap?: () => void;
@@ -318,7 +319,7 @@ export function WargaPapanInfoStrip(p: PapanStripProps) {
           <View style={[styles.stripBadge, { backgroundColor: p.badgeBg }]}>
             <Text style={[styles.stripBadgeText, { color: p.badgeFg }]}>{p.badge}</Text>
           </View>
-          <Text style={styles.stripMeta}>{p.metaRight}</Text>
+          <Text style={[styles.stripMeta, p.metaRightColor ? { color: p.metaRightColor, fontWeight: '700' } : null]}>{p.metaRight}</Text>
         </View>
         <Text style={styles.stripTitle} numberOfLines={1}>
           {p.title}
