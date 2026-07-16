@@ -20,6 +20,7 @@ import { WargaCard, StatusChip, wargaText } from '../../components/warga/wargaUi
 import { WargaPageHeader } from '../../components/warga/DashboardWidgets';
 import { WargaEmptyState } from '../../components/warga/PengurusWidgets';
 import { PrimaryButton } from '../../components/Card';
+import { DateField } from '../../components/DateField';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
 import { familyService } from '../../services/familyService';
@@ -578,16 +579,7 @@ function BuatTagihanModal({
               />
 
               <Text style={[styles.mLabel, { marginTop: 18 }]}>Jatuh Tempo</Text>
-              <View style={styles.mField}>
-                <Icon name="calendar-outline" size={16} color={colors.textSecondary} />
-                <TextInput
-                  style={styles.mFieldInput}
-                  value={dueDate}
-                  onChangeText={setDueDate}
-                  placeholder="dd/mm/yyyy"
-                  placeholderTextColor={colors.textHint}
-                />
-              </View>
+              <DateField value={dueDate} onChange={setDueDate} placeholder="Pilih tanggal" />
 
               <Text style={[styles.mLabel, { marginTop: 18 }]}>Catatan (opsional)</Text>
               <TextInput

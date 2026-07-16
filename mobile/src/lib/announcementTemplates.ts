@@ -1,12 +1,14 @@
 // Draft pengumuman siap-pakai untuk Ketua RT.
 // Judul dipilih dari dropdown; isi (narasi) terisi otomatis (masih bisa diedit).
-// Detail Hari/Tanggal/Jam/Lokasi diisi terpisah lewat field wajib pada form.
+// Jam & Lokasi juga punya preset (jamOptions/lokasiOptions) yang tampil sebagai dropdown.
 // Bagian [dalam kurung siku] adalah placeholder untuk disesuaikan Ketua RT.
 
 export interface AnnouncementTemplate {
   title: string;
   content: string;
   suggestPinned?: boolean;
+  jamOptions?: string[];
+  lokasiOptions?: string[];
 }
 
 export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
@@ -18,6 +20,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       'Kegiatan meliputi membersihkan selokan, memangkas rumput, dan merapikan fasilitas umum. ' +
       'Mohon warga membawa peralatan seadanya (sapu, cangkul, sabit).\n\n' +
       'Partisipasi seluruh warga sangat kami harapkan. Terima kasih atas kerja samanya.',
+    jamOptions: ['06.00 WIB s.d. selesai', '07.00 WIB s.d. selesai', '08.00 WIB s.d. selesai'],
+    lokasiOptions: ['Lapangan RT', 'Balai Warga', 'Selokan & jalan lingkungan', 'Titik kumpul depan pos ronda'],
   },
   {
     title: 'Jadwal Ronda Malam',
@@ -29,6 +33,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       '• Malam Selasa: [nama-nama]\n' +
       '• Malam Rabu: [nama-nama]\n\n' +
       'Mohon setiap regu hadir sesuai jadwal. Bila berhalangan, harap mencari pengganti dan mengabari koordinator. Terima kasih.',
+    jamOptions: ['21.00 s.d. 03.00 WIB', '22.00 s.d. 04.00 WIB', '23.00 s.d. 04.00 WIB'],
+    lokasiOptions: ['Pos Ronda RT', 'Keliling lingkungan RT'],
   },
   {
     title: 'Rapat Warga RT',
@@ -40,6 +46,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       '2. [poin kedua]\n' +
       '3. Lain-lain\n\n' +
       'Kehadiran Bapak/Ibu sangat penting untuk kemajuan lingkungan kita. Atas perhatiannya, terima kasih.',
+    jamOptions: ['16.00 WIB s.d. selesai', '19.30 WIB s.d. selesai', '20.00 WIB s.d. selesai'],
+    lokasiOptions: ['Balai Warga', 'Rumah Ketua RT', 'Aula RW'],
   },
   {
     title: 'Pembayaran Iuran Bulanan',
@@ -49,6 +57,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       'Pembayaran dapat dilakukan melalui aplikasi (QRIS/transfer) atau tunai ke Bendahara. ' +
       'Iuran digunakan untuk kas kebersihan, keamanan, dan kegiatan warga. ' +
       'Bagi yang sudah membayar, kami ucapkan terima kasih.',
+    jamOptions: ['Jam kerja (08.00–17.00 WIB)', 'Setiap saat via aplikasi'],
+    lokasiOptions: ['Rumah Bendahara RT', 'Via aplikasi (QRIS/transfer)'],
   },
   {
     title: 'Peringatan Keamanan Lingkungan',
@@ -61,6 +71,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       '• Menyalakan lampu depan rumah pada malam hari.\n\n' +
       'Mari saling menjaga keamanan lingkungan kita. Terima kasih atas perhatian dan kerja samanya.',
     suggestPinned: true,
+    jamOptions: ['Setiap malam', '18.00 WIB s.d. pagi', 'Berlaku sampai pemberitahuan berikutnya'],
+    lokasiOptions: ['Seluruh lingkungan RT'],
   },
   {
     title: 'Peringatan HUT Kemerdekaan RI',
@@ -72,6 +84,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       '• Kerja bakti & pemasangan umbul-umbul\n' +
       '• Malam ramah tamah warga\n\n' +
       'Ditunggu partisipasi dan kemeriahannya dari seluruh warga. Merdeka!',
+    jamOptions: ['08.00 WIB s.d. selesai', '15.00 WIB s.d. selesai', '19.30 WIB (malam ramah tamah)'],
+    lokasiOptions: ['Lapangan RT', 'Jalan lingkungan RT', 'Balai Warga'],
   },
   {
     title: 'Kegiatan Posyandu',
@@ -80,6 +94,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       'kegiatan Posyandu.\n\n' +
       'Layanan meliputi penimbangan, imunisasi, pemeriksaan ibu hamil, dan pemberian vitamin. ' +
       'Mohon membawa buku KIA/KMS. Terima kasih.',
+    jamOptions: ['08.00 s.d. 11.00 WIB', '09.00 s.d. 12.00 WIB'],
+    lokasiOptions: ['Posyandu RT', 'Balai Warga', 'Rumah Kader Posyandu'],
   },
   {
     title: 'Informasi Pemadaman Listrik/Air',
@@ -88,6 +104,8 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       'karena [pemeliharaan jaringan / perbaikan].\n\n' +
       'Mohon warga mempersiapkan [cadangan air / penerangan] secukupnya. ' +
       'Mohon maaf atas ketidaknyamanannya.',
+    jamOptions: ['09.00 s.d. 15.00 WIB', '10.00 s.d. 14.00 WIB', 'Sepanjang hari'],
+    lokasiOptions: ['Seluruh wilayah RT', 'Sebagian blok RT'],
   },
   {
     title: 'Ucapan Duka Cita',
@@ -97,5 +115,7 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
       'Segenap warga RT turut berduka cita yang sedalam-dalamnya. Semoga almarhum/almarhumah ' +
       'husnul khatimah dan keluarga yang ditinggalkan diberi ketabahan.',
     suggestPinned: true,
+    jamOptions: ['Menyusul', 'Ba’da Dzuhur', 'Ba’da Ashar'],
+    lokasiOptions: ['Rumah duka', 'Masjid setempat', 'TPU setempat'],
   },
 ];

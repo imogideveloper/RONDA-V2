@@ -107,7 +107,7 @@ export function WargaIuranScreen({ profile, rt }: Props) {
         bendaharaName: bendahara?.fullName ?? '',
         signatureUrl: rt.signatureUrl,
       });
-      await exportHtmlAsPdf(html, 'Simpan / Bagikan Bukti Iuran');
+      await exportHtmlAsPdf(html, 'Simpan / Bagikan Bukti Iuran', 'Bukti-Pembayaran-Iuran.pdf');
     } catch (e: any) {
       toast.error('Gagal membuat bukti pembayaran');
     } finally {

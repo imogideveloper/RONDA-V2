@@ -107,7 +107,7 @@ export default function LaporanBulananScreen({ route, navigation }: Props) {
         bendaharaName,
         signatureUrl: rt.signatureUrl,
       });
-      await exportHtmlAsPdf(html, `Laporan Kas ${r.label}`);
+      await exportHtmlAsPdf(html, `Laporan Kas ${r.label}`, `Laporan-Kas-${r.label}.pdf`);
     } catch (e: any) {
       toast.error(`Gagal membuat PDF: ${String(e?.message ?? e)}`);
     } finally {

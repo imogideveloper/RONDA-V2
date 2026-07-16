@@ -215,7 +215,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
             {r.applicantName ? ` · a.n. ${r.applicantName}` : ''}
           </Text>
         </View>
-        {!rejected && (
+        {suratIsApproved(r) && (
           <Pressable onPress={() => downloadPdf(r)} hitSlop={8} style={styles.dlBtn} disabled={downloading === r.id}>
             {downloading === r.id ? (
               <ActivityIndicator size="small" color={wargaColors.primaryGreen} />
@@ -427,7 +427,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
                   <Text style={styles.keperluanText}>{detailReq.purpose || '—'}</Text>
                 </View>
 
-                {!rejected && (
+                {suratIsApproved(detailReq) && (
                   <Pressable
                     style={styles.detailDlBtn}
                     onPress={() => downloadPdf(detailReq)}

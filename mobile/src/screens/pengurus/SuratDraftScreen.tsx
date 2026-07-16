@@ -64,16 +64,23 @@ export default function SuratDraftScreen({ route }: Props) {
           </Text>
         </View>
 
-        <Pressable style={styles.copyBtn} onPress={downloadPdf} disabled={downloading}>
-          {downloading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Icon name="download-outline" size={18} color="#fff" />
-              <Text style={styles.copyText}>Unduh PDF</Text>
-            </>
-          )}
-        </Pressable>
+        {signed ? (
+          <Pressable style={styles.copyBtn} onPress={downloadPdf} disabled={downloading}>
+            {downloading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Icon name="download-outline" size={18} color="#fff" />
+                <Text style={styles.copyText}>Unduh PDF</Text>
+              </>
+            )}
+          </Pressable>
+        ) : (
+          <View style={styles.pdfLocked}>
+            <Icon name="lock-closed-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.pdfLockedText}>PDF tersedia setelah surat disetujui pengurus RT.</Text>
+          </View>
+        )}
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
@@ -96,4 +103,6 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   copyText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  pdfLocked: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18, paddingVertical: 14, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background },
+  pdfLockedText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
 });

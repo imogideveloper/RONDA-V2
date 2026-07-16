@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, wargaColors } from '../../config/theme';
 import { PrimaryButton } from '../Card';
+import { DateField } from '../DateField';
 import { WargaProfileAvatar } from './DashboardWidgets';
 import { useToast } from '../Toast';
 import { authService } from '../../services/authService';
@@ -153,7 +154,7 @@ export function EditProfileModal({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Tanggal Lahir</Text>
-                <TextInput style={styles.input} value={birthDate} onChangeText={setBirthDate} placeholder="12 Mei 1990" placeholderTextColor={colors.textHint} />
+                <DateField value={birthDate} onChange={setBirthDate} placeholder="12 Mei 1990" />
               </View>
             </View>
 

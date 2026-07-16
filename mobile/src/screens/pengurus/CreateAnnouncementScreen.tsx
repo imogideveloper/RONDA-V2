@@ -18,6 +18,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radius, wargaColors } from '../../config/theme';
 import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { PrimaryButton } from '../../components/Card';
+import { DateField } from '../../components/DateField';
+import { hariFromDate, indoToISO } from '../../lib/dateInput';
 import { wargaText } from '../../components/warga/wargaUi';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
@@ -34,6 +36,8 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
   const [tanggal, setTanggal] = useState('');
   const [jam, setJam] = useState('');
   const [lokasi, setLokasi] = useState('');
+  const [jamOptions, setJamOptions] = useState<string[]>([]);
+  const [lokasiOptions, setLokasiOptions] = useState<string[]>([]);
   const [pinned, setPinned] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -42,6 +46,19 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
     setTitle(t.title);
     setContent(t.content);
     if (t.suggestPinned) setPinned(true);
+    // Jam & Lokasi -> dropdown preset dari template (reset pilihan sebelumnya).
+    setJamOptions(t.jamOptions ?? []);
+    setLokasiOptions(t.lokasiOptions ?? []);
+    setJam('');
+    setLokasi('');
+    setPickerOpen(false);
+  };
+
+  const clearTemplate = () => {
+    setTitle('');
+    setContent('');
+    setJamOptions([]);
+    setLokasiOptions([]);
     setPickerOpen(false);
   };
 
@@ -55,15 +72,27 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
     setSaving(true);
     try {
       let parsedDate: Date | null = null;
-      const d = new Date(tanggal.trim());
+      const iso = indoToISO(tanggal.trim());
+      const d = new Date(iso ? `${iso}T00:00:00` : tanggal.trim());
       if (!isNaN(d.getTime())) parsedDate = d;
 
-      // Gabungkan detail jadwal (wajib) ke bagian atas isi pengumuman.
+      // Susun: Pembukaan -> Isi (narasi) -> Jadwal -> Penutup.
+      // Jadwal disisipkan SEBELUM paragraf terakhir (penutup), setelah isi utama.
       const jadwal =
         `🗓️ Hari/Tanggal: ${hari.trim()}, ${tanggal.trim()}\n` +
         `⏰ Jam: ${jam.trim()}\n` +
         `📍 Lokasi: ${lokasi.trim()}`;
-      const fullContent = `${jadwal}\n\n${content.trim()}`;
+      const paras = content.trim().split(/\n{2,}/);
+      let fullContent: string;
+      if (paras.length >= 3) {
+        // pembukaan + isi ... -> jadwal -> penutup (paragraf terakhir)
+        const penutup = paras[paras.length - 1];
+        const awal = paras.slice(0, -1).join('\n\n');
+        fullContent = `${awal}\n\n${jadwal}\n\n${penutup}`;
+      } else {
+        // 1-2 paragraf: jadwal ditaruh di bawah isi
+        fullContent = `${paras.join('\n\n')}\n\n${jadwal}`;
+      }
 
       await rtService.createAnnouncement({
         rtId,
@@ -109,7 +138,7 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
                       </Pressable>
                     );
                   })}
-                  <Pressable style={styles.optionRow} onPress={() => { setTitle(''); setContent(''); setPickerOpen(false); }}>
+                  <Pressable style={styles.optionRow} onPress={clearTemplate}>
                     <Icon name="create-outline" size={16} color={colors.textSecondary} />
                     <Text style={[styles.optionText, { color: colors.textSecondary }]}>Judul lain (tulis sendiri)</Text>
                   </Pressable>
@@ -141,13 +170,29 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.subLabel}>Tanggal</Text>
-              <TextInput style={styles.input} value={tanggal} onChangeText={setTanggal} placeholder="Contoh: 20 Juli 2026" placeholderTextColor={colors.textHint} />
+              <DateField
+                value={tanggal}
+                onChange={(v) => {
+                  setTanggal(v);
+                  const h = hariFromDate(v);
+                  if (h) setHari(h); // isi Hari otomatis dari tanggal terpilih
+                }}
+                placeholder="20 Juli 2026"
+              />
             </View>
           </View>
           <Text style={styles.subLabel}>Jam</Text>
-          <TextInput style={styles.input} value={jam} onChangeText={setJam} placeholder="Contoh: 07.00 WIB s.d. selesai" placeholderTextColor={colors.textHint} />
+          {jamOptions.length > 0 ? (
+            <TemplateSelect value={jam} options={jamOptions} placeholder="Pilih jam" onChange={setJam} />
+          ) : (
+            <TextInput style={styles.input} value={jam} onChangeText={setJam} placeholder="Contoh: 07.00 WIB s.d. selesai" placeholderTextColor={colors.textHint} />
+          )}
           <Text style={styles.subLabel}>Lokasi</Text>
-          <TextInput style={styles.input} value={lokasi} onChangeText={setLokasi} placeholder="Contoh: Lapangan RT / Balai Warga" placeholderTextColor={colors.textHint} />
+          {lokasiOptions.length > 0 ? (
+            <TemplateSelect value={lokasi} options={lokasiOptions} placeholder="Pilih lokasi" onChange={setLokasi} />
+          ) : (
+            <TextInput style={styles.input} value={lokasi} onChangeText={setLokasi} placeholder="Contoh: Lapangan RT / Balai Warga" placeholderTextColor={colors.textHint} />
+          )}
 
           <View style={styles.switchRow}>
             <View style={{ flex: 1 }}>
@@ -165,8 +210,73 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
   );
 }
 
+// Dropdown pilihan (jam/lokasi) dari preset template; ada opsi "tulis sendiri".
+function TemplateSelect({
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  placeholder: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState(false);
+
+  if (custom) {
+    return (
+      <View>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textHint}
+          autoFocus
+        />
+        <Pressable onPress={() => setCustom(false)} hitSlop={6}>
+          <Text style={styles.linkSmall}>← Pilih dari daftar</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.selectWrap, open && { zIndex: 100 }]}>
+      <Pressable style={[styles.dropdown, open && styles.dropdownOpen]} onPress={() => setOpen((o) => !o)}>
+        <Text style={[styles.dropdownText, value === '' && { color: colors.textHint }]} numberOfLines={1}>
+          {value === '' ? placeholder : value}
+        </Text>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+      </Pressable>
+      {open && (
+        <View style={styles.menu}>
+          <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+            {options.map((opt) => {
+              const selected = value === opt;
+              return (
+                <Pressable key={opt} style={[styles.optionRow, selected && styles.optionRowActive]} onPress={() => { onChange(opt); setOpen(false); }}>
+                  <Text style={[styles.optionText, selected && { color: wargaColors.primaryGreen, fontWeight: '600' }]}>{opt}</Text>
+                  {selected && <Icon name="checkmark" size={16} color={wargaColors.primaryGreen} />}
+                </Pressable>
+              );
+            })}
+            <Pressable style={styles.optionRow} onPress={() => { setCustom(true); setOpen(false); onChange(''); }}>
+              <Icon name="create-outline" size={16} color={colors.textSecondary} />
+              <Text style={[styles.optionText, { color: colors.textSecondary }]}>Lainnya (tulis sendiri)</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: wargaColors.bgColor },
+  linkSmall: { fontSize: 12, color: wargaColors.primaryGreen, fontWeight: '600', marginTop: 6 },
   scroll: { padding: 16, paddingBottom: 32 },
   label: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginTop: 14, marginBottom: 8 },
   subLabel: { fontSize: 13, color: colors.textSecondary, marginTop: 12, marginBottom: 6 },

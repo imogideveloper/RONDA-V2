@@ -18,6 +18,7 @@ import { Icon } from '../../components/Icon';
 import { colors, radius, wargaColors } from '../../config/theme';
 import { WargaAppBar } from '../../components/warga/WargaAppBar';
 import { PrimaryButton } from '../../components/Card';
+import { DateField } from '../../components/DateField';
 import { useToast } from '../../components/Toast';
 import { confirmDialog } from '../../lib/dialog';
 import * as DocumentPicker from 'expo-document-picker';
@@ -274,7 +275,7 @@ function MemberFormModal({
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.label}>Tanggal Lahir</Text>
-                  <TextInput style={styles.input} value={birthDate} onChangeText={setBirthDate} placeholder="12 Mei 2012" placeholderTextColor={colors.textHint} />
+                  <DateField value={birthDate} onChange={setBirthDate} placeholder="12 Mei 2012" />
                 </View>
               </View>
 
