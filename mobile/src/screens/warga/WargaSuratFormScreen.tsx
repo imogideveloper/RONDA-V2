@@ -98,6 +98,7 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
     setSubmitting(true);
     try {
       await rtService.submitSuratRequest(rt.id, suratItem.suratTypeKey, buildPurpose(), {
+        name: forSelf ? undefined : family[familyIndex]?.name,
         nik,
         birthPlace,
         birthDate,

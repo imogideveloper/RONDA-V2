@@ -15,6 +15,7 @@ import {
   suratIsApproved,
   suratIsPending,
   suratIsRejected,
+  suratPersonName,
   suratReferenceCode,
 } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
@@ -80,7 +81,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
           </View>
           <Text style={styles.cardTitle}>{r.suratType}</Text>
           <Text style={styles.cardSub}>
-            {(r.userName ?? 'Warga')} • {formatDateShort(r.createdAt)}
+            {suratPersonName(r)} • {formatDateShort(r.createdAt)}
           </Text>
         </View>
         <View style={[styles.dot, { backgroundColor: st.color }]} />
@@ -182,7 +183,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
                   </View>
                   <View style={styles.dataCard}>
                     <View style={styles.dataGrid}>
-                      <DataCell label="Nama" value={detail.userName ?? 'Warga'} />
+                      <DataCell label="Nama" value={suratPersonName(detail)} />
                       <DataCell label="NIK" value={detail.nik} />
                       <DataCell label="Pekerjaan" value={detail.occupation} />
                       <DataCell label="Status" value={detail.maritalStatus} />

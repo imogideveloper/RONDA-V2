@@ -137,7 +137,7 @@ export function SuratLetterPreview({
       </View>
 
       {draft.isi.map((p, i) => (
-        <Text key={i} style={styles.para}>{p}</Text>
+        <ParaWithBold key={i} text={p} bold={draft.keperluan} />
       ))}
 
       <Text style={styles.para}>{draft.penutup}</Text>
@@ -153,6 +153,21 @@ export function SuratLetterPreview({
         <Text style={styles.ttdName}>( {data.ketuaName || '……………………'} )</Text>
       </View>
     </View>
+  );
+}
+
+// Paragraf isi; frasa keperluan ditebalkan bila muncul di dalamnya.
+function ParaWithBold({ text, bold }: { text: string; bold: string }) {
+  const idx = bold && bold.trim() !== '' ? text.indexOf(bold) : -1;
+  if (idx === -1) {
+    return <Text style={styles.para}>{text}</Text>;
+  }
+  return (
+    <Text style={styles.para}>
+      {text.slice(0, idx)}
+      <Text style={styles.paraBold}>{bold}</Text>
+      {text.slice(idx + bold.length)}
+    </Text>
   );
 }
 
@@ -182,6 +197,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 15, fontWeight: '700', color: '#111', textAlign: 'center', textDecorationLine: 'underline' },
   nomor: { fontSize: 12, color: '#333', textAlign: 'center', marginTop: 4, marginBottom: 16 },
   para: { fontSize: 13, color: '#222', lineHeight: 20, marginBottom: 12, textAlign: 'justify' },
+  paraBold: { fontWeight: '700', color: '#111' },
   dataBox: { marginBottom: 12, paddingLeft: 8 },
   dataRow: { flexDirection: 'row', marginBottom: 3 },
   dataLabel: { width: 118, fontSize: 13, color: '#222' },

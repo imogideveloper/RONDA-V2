@@ -15,6 +15,12 @@ import {
 import { rtService } from '../../services/rtService';
 import { SURAT_CATALOG } from '../../lib/suratCatalog';
 import { EditProfileModal } from '../../components/warga/EditProfileModal';
+import {
+  NotifikasiSheet,
+  PrivasiSheet,
+  countNotifActive,
+  loadNotifPrefs,
+} from '../../components/warga/SettingsSheets';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -40,6 +46,9 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [kontribusi, setKontribusi] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [privasiOpen, setPrivasiOpen] = useState(false);
+  const [notifActive, setNotifActive] = useState(4);
 
   const loadMemberships = useCallback(async () => {
     setLoading(true);
@@ -57,6 +66,10 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
   useEffect(() => {
     loadMemberships();
   }, [loadMemberships]);
+
+  useEffect(() => {
+    loadNotifPrefs(profile.id).then((p) => setNotifActive(countNotifActive(p)));
+  }, [profile.id]);
 
   const onSaved = async () => {
     const updated = await authService.getProfile();
@@ -132,8 +145,8 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
           iconBg={wargaColors.lightGreen}
           iconColor={wargaColors.primaryGreen}
           title="Notifikasi"
-          subtitle="Aktif"
-          onTap={() => toast.success('Pengaturan notifikasi segera hadir')}
+          subtitle={notifActive === 0 ? 'Nonaktif' : `${notifActive} dari 4 aktif`}
+          onTap={() => setNotifOpen(true)}
         />
         <WargaMenuTile
           icon="shield-outline"
@@ -141,7 +154,7 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
           iconColor="#185FA5"
           title="Privasi & Keamanan"
           subtitle="Kelola keamanan akun"
-          onTap={() => toast.success('Pengaturan privasi segera hadir')}
+          onTap={() => setPrivasiOpen(true)}
         />
         <WargaMenuTile
           icon="home-outline"
@@ -231,6 +244,14 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
         onClose={() => setEditing(false)}
         onSaved={onSaved}
       />
+
+      <NotifikasiSheet
+        visible={notifOpen}
+        userId={profile.id}
+        onClose={() => setNotifOpen(false)}
+        onSaved={(p) => setNotifActive(countNotifActive(p))}
+      />
+      <PrivasiSheet visible={privasiOpen} userId={profile.id} onClose={() => setPrivasiOpen(false)} />
     </SafeAreaView>
   );
 }

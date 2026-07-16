@@ -19,8 +19,18 @@ import {
 } from '../../components/warga/IuranWidgets';
 import { rtService } from '../../services/rtService';
 import { wargaHomeLoader } from '../../services/wargaHomeLoader';
-import { IuranRecord, iuranIsPaid, iuranIsUnpaid, rtDisplayLabel } from '../../types/models';
-import { iuranPeriodTitle } from '../../lib/period';
+import {
+  IuranRecord,
+  iuranIsPaid,
+  iuranIsUnpaid,
+  iuranPaymentMethodLabel,
+  profileIsBendahara,
+  profileIsKetua,
+  rtDisplayLabel,
+} from '../../types/models';
+import { iuranPeriodTitle, monthLabel } from '../../lib/period';
+import { buildIuranReceiptHtml } from '../../lib/iuranReceiptHtml';
+import { exportHtmlAsPdf } from '../../lib/suratPdf';
 import { groupByYearMonth, dateFromPeriodKey } from '../../lib/papanInfo';
 import { Profile, RtUnit } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
@@ -40,6 +50,7 @@ export function WargaIuranScreen({ profile, rt }: Props) {
   const [bills, setBills] = useState<IuranRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -68,6 +79,41 @@ export function WargaIuranScreen({ profile, rt }: Props) {
   const vaNumber = `0089-01-005-${rt.rtNumber.replace(/\D/g, '').padStart(3, '0')}-510`;
   const phoneDigits = profile.phone.replace(/\D/g, '');
   const ewalletPhone = phoneDigits.length >= 10 ? phoneDigits : '081234567891';
+
+  const shortDate = (d: Date | null): string =>
+    d ? `${d.getDate()} ${monthLabel(d.getMonth() + 1)} ${d.getFullYear()}` : '—';
+
+  const downloadReceipt = async () => {
+    if (paidBills.length === 0 || downloading) return;
+    setDownloading(true);
+    try {
+      const pengurus = await rtService.getRtPengurus(rt.id).catch(() => []);
+      const ketua = pengurus.find(profileIsKetua);
+      const bendahara = pengurus.find(profileIsBendahara);
+      // Urutkan periode lunas dari terlama ke terbaru untuk rekap.
+      const ordered = [...paidBills].sort((a, b) => a.periodKey.localeCompare(b.periodKey));
+      const html = buildIuranReceiptHtml({
+        rt,
+        wargaName: profile.fullName,
+        wargaPhone: profile.phone,
+        rows: ordered.map((b) => ({
+          periodLabel: iuranPeriodTitle(b),
+          paidDateLabel: shortDate(b.paidAt),
+          method: iuranPaymentMethodLabel(b),
+          amount: b.amount,
+        })),
+        total: paidTotal,
+        ketuaName: ketua?.fullName ?? '',
+        bendaharaName: bendahara?.fullName ?? '',
+        signatureUrl: rt.signatureUrl,
+      });
+      await exportHtmlAsPdf(html, 'Simpan / Bagikan Bukti Iuran');
+    } catch (e: any) {
+      toast.error('Gagal membuat bukti pembayaran');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const openBayar = () => {
     navigation.navigate('WargaTagihanIuran', {
@@ -148,8 +194,8 @@ export function WargaIuranScreen({ profile, rt }: Props) {
               />
               <View style={{ height: 12 }} />
               <WargaIuranDownloadCard
-                lastPaidLabel={lastPaidLabel}
-                onTap={paidBills.length > 0 ? () => toast.success('Unduh bukti — segera hadir') : undefined}
+                lastPaidLabel={downloading ? 'Menyiapkan PDF…' : lastPaidLabel}
+                onTap={paidBills.length > 0 ? downloadReceipt : undefined}
               />
             </>
           )}

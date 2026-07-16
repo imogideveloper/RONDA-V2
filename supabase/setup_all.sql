@@ -2299,3 +2299,7 @@ CREATE POLICY "family_write_officer" ON public.family_members
       WHERE p.id = auth.uid() AND p.role IN ('ketua_rt', 'bendahara')
     )
   );
+
+-- ===== 021_surat_applicant_name.sql =====
+ALTER TABLE public.surat_requests
+  ADD COLUMN IF NOT EXISTS applicant_name TEXT;

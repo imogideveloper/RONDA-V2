@@ -1,10 +1,10 @@
 // Port dari lib/pages/warga/warga_home_view.dart
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { suratItemByTypeKey } from '../../lib/suratCatalog';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, wargaColors } from '../../config/theme';
 import { useToast } from '../../components/Toast';
@@ -38,6 +38,7 @@ import {
   rtDisplayLabel,
   suratIsApproved,
   suratIsRejected,
+  suratPersonName,
   suratReferenceCode,
   suratStatusLabel,
 } from '../../types/models';
@@ -88,9 +89,12 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
     [rt.id, profile.id, toast],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Muat ulang tiap Beranda kembali fokus (mis. setelah ajukan surat / bayar iuran).
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -166,11 +170,10 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
       </ScrollView>
 
       {/* Detail surat dari papan info */}
-      <Modal visible={detailSurat != null} transparent animationType="slide" onRequestClose={() => setDetailSurat(null)}>
+      <Modal visible={detailSurat != null} transparent animationType="fade" onRequestClose={() => setDetailSurat(null)}>
         <View style={styles.dBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setDetailSurat(null)} />
-          <SafeAreaView edges={['bottom']} style={styles.dSheet}>
-            <View style={styles.dHandle} />
+          <View style={styles.dDialog}>
             {detailSurat && (() => {
               const s = detailSurat;
               const st = suratStatusMeta(s);
@@ -178,46 +181,43 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
               return (
                 <ScrollView showsVerticalScrollIndicator={false}>
                   {/* Header */}
-                  <View style={styles.dHeaderRow}>
-                    <View style={styles.dIcon}>
-                      <Icon name={item?.icon ?? 'document-text-outline'} size={20} color={wargaColors.primaryGreen} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.dTitle}>{s.suratType}</Text>
-                      <View style={styles.dBadgeRow}>
-                        <View style={[styles.dBadge, { backgroundColor: st.bg }]}>
-                          <Text style={[styles.dBadgeText, { color: st.color }]}>{st.badge}</Text>
-                        </View>
-                        <Text style={styles.dNomor}>{suratReferenceCode(s, rt.rtNumber)}</Text>
-                      </View>
-                    </View>
+                  <View style={styles.dTitleRow}>
+                    <Text style={styles.dDialogTitle}>Detail Permohonan</Text>
                     <Pressable onPress={() => setDetailSurat(null)} hitSlop={8} style={styles.dClose}>
                       <Icon name="close-circle-outline" size={22} color={colors.textSecondary} />
                     </Pressable>
                   </View>
 
-                  {/* Status */}
-                  <View style={[styles.dStatusBox, { backgroundColor: st.bg }]}>
-                    <Icon name={st.icon} size={20} color={st.color} />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={[styles.dStatusTitle, { color: st.color }]}>{st.title}</Text>
-                      <Text style={styles.dStatusSub}>{st.sub}</Text>
+                  {/* Badge + nomor */}
+                  <View style={styles.dTopRow}>
+                    <View style={[styles.dBadge, { backgroundColor: st.bg }]}>
+                      <Text style={[styles.dBadgeText, { color: st.color }]}>{st.badge}</Text>
+                    </View>
+                    <Text style={styles.dNomor}>{suratReferenceCode(s, rt.rtNumber)}</Text>
+                  </View>
+
+                  {/* Kartu jenis surat */}
+                  <View style={styles.dMini}>
+                    <View style={styles.dIcon}>
+                      <Icon name={item?.icon ?? 'document-text-outline'} size={20} color={wargaColors.primaryGreen} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.dTitle}>{s.suratType}</Text>
+                      <Text style={styles.dMiniSub}>Diajukan: {formatDateShort(s.createdAt)}</Text>
                     </View>
                   </View>
 
-                  {/* Data orang */}
+                  {/* Pemohon */}
                   <View style={styles.dSectionRow}>
                     <Icon name="person-outline" size={16} color="#185FA5" />
-                    <Text style={styles.dSectionTitle}>Data Orang dalam Surat</Text>
+                    <Text style={styles.dSectionTitle}>Pemohon</Text>
                   </View>
                   <View style={styles.dDataCard}>
-                    <Text style={styles.dName}>{s.userName ?? profile.fullName}</Text>
-                    <Text style={styles.dNameSub}>{[s.gender, s.religion].filter(Boolean).join(' • ') || '—'}</Text>
                     <View style={styles.dGrid}>
+                      <DataCell label="Nama" value={suratPersonName(s, profile.fullName)} />
                       <DataCell label="NIK" value={s.nik} />
-                      <DataCell label="Tempat/Tgl Lahir" value={ttlOf(s)} />
-                      <DataCell label="Status Pernikahan" value={s.maritalStatus} />
                       <DataCell label="Pekerjaan" value={s.occupation} />
+                      <DataCell label="Status" value={s.maritalStatus} />
                     </View>
                     <DataCell label="Alamat" value={rt.address} full />
                   </View>
@@ -231,35 +231,23 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
                     <Text style={styles.dKeperluanText}>{s.purpose || '—'}</Text>
                   </View>
 
-                  <View style={styles.dTanggalRow}>
-                    <Text style={styles.dTanggalLabel}>Tanggal Pengajuan</Text>
-                    <Text style={styles.dTanggalValue}>{formatDateShort(s.createdAt)}</Text>
+                  {/* Status (warga: info, bukan aksi) */}
+                  <View style={[styles.dStatusBox, { backgroundColor: st.bg, marginTop: 18 }]}>
+                    <Icon name={st.icon} size={20} color={st.color} />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={[styles.dStatusTitle, { color: st.color }]}>{st.title}</Text>
+                      <Text style={styles.dStatusSub}>{st.sub}</Text>
+                    </View>
                   </View>
-
-                  <Pressable
-                    style={styles.dLihatBtn}
-                    onPress={() => {
-                      setDetailSurat(null);
-                      navigation.navigate('WargaLayananSurat', { profile, rt });
-                    }}
-                  >
-                    <Icon name="shield-outline" size={18} color="#fff" />
-                    <Text style={styles.dLihatText}>Lihat di Layanan Surat</Text>
-                  </Pressable>
                   <View style={{ height: 12 }} />
                 </ScrollView>
               );
             })()}
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
   );
-
-  function ttlOf(r: SuratRequest): string | null {
-    if (!r.birthPlace && !r.birthDate) return null;
-    return `${r.birthPlace ?? '-'}, ${r.birthDate ?? '-'}`;
-  }
 
   function buildPapanStrips(): PapanStripProps[] {
     const out: PapanStripProps[] = [];
@@ -342,10 +330,10 @@ function suratStatusMeta(s: SuratRequest): {
   badge: string; title: string; sub: string; icon: string; color: string; bg: string;
 } {
   if (suratIsApproved(s))
-    return { badge: 'DISETUJUI', title: 'Surat Disetujui', sub: 'Permohonan telah disetujui pengurus RT.', icon: 'checkmark-circle', color: wargaColors.primaryGreen, bg: wargaColors.lightGreen };
+    return { badge: 'DISETUJUI', title: 'Surat Disetujui', sub: 'Telah disetujui pengurus RT.', icon: 'checkmark-circle', color: wargaColors.primaryGreen, bg: wargaColors.lightGreen };
   if (suratIsRejected(s))
-    return { badge: 'DITOLAK', title: 'Surat Ditolak', sub: 'Permohonan tidak disetujui pengurus RT.', icon: 'close-circle-outline', color: wargaColors.dangerRed, bg: wargaColors.lightRed };
-  return { badge: 'MENUNGGU', title: 'Menunggu Persetujuan', sub: 'Permohonan sedang diproses oleh pengurus RT.', icon: 'time-outline', color: '#D97706', bg: '#FEF3C7' };
+    return { badge: 'DITOLAK', title: 'Surat Ditolak', sub: 'Tidak disetujui pengurus RT.', icon: 'close-circle-outline', color: wargaColors.dangerRed, bg: wargaColors.lightRed };
+  return { badge: 'MENUNGGU', title: 'Menunggu Persetujuan', sub: 'Sedang diproses pengurus RT.', icon: 'time-outline', color: '#D97706', bg: '#FEF3C7' };
 }
 
 function DataCell({ label, value, full }: { label: string; value?: string | null; full?: boolean }) {
@@ -361,13 +349,15 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: wargaColors.bgColor },
   scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32 },
   emptyPapan: { color: colors.textSecondary, fontSize: 13, paddingVertical: 12 },
-  dBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  dSheet: { backgroundColor: colors.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, maxHeight: '90%' },
-  dHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 14 },
-  dHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  dBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  dDialog: { width: '100%', maxWidth: 400, backgroundColor: colors.surface, borderRadius: 22, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20, maxHeight: '88%' },
+  dTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  dDialogTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  dTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  dMini: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 14, padding: 12 },
+  dMiniSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   dIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: wargaColors.lightGreen, alignItems: 'center', justifyContent: 'center' },
   dTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
-  dBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 },
   dBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   dBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
   dNomor: { fontSize: 11, color: colors.textSecondary },
@@ -388,6 +378,4 @@ const styles = StyleSheet.create({
   dTanggalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
   dTanggalLabel: { fontSize: 13, color: colors.textSecondary },
   dTanggalValue: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
-  dLihatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2563EB', borderRadius: 14, paddingVertical: 15, marginTop: 18 },
-  dLihatText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

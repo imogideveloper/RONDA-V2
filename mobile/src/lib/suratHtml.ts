@@ -11,6 +11,18 @@ const esc = (s: string) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const BLANK = '________________';
 
+// Tebalkan frasa keperluan di dalam paragraf (input sudah ter-escape).
+function boldKeperluan(escapedPara: string, escapedKeperluan: string): string {
+  if (!escapedKeperluan || escapedKeperluan.trim() === '') return escapedPara;
+  const idx = escapedPara.indexOf(escapedKeperluan);
+  if (idx === -1) return escapedPara;
+  return (
+    escapedPara.slice(0, idx) +
+    `<strong>${escapedKeperluan}</strong>` +
+    escapedPara.slice(idx + escapedKeperluan.length)
+  );
+}
+
 export function buildSuratHtml(data: SuratLetterData, opts?: { showSignature?: boolean }): string {
   const { rt } = data;
   const showSignature = opts?.showSignature ?? true;
@@ -77,7 +89,7 @@ export function buildSuratHtml(data: SuratLetterData, opts?: { showSignature?: b
       ${row('Pekerjaan', orBlank(data.occupation))}
       ${row('Alamat', alamat)}
     </table>
-    ${draft.isi.map((p) => `<p>${esc(p)}</p>`).join('')}
+    ${draft.isi.map((p) => `<p>${boldKeperluan(esc(p), esc(draft.keperluan))}</p>`).join('')}
     <p>${esc(draft.penutup)}</p>
     <div style="margin-top:24px;width:230px;margin-left:auto;text-align:center">
       <div>${esc(tanggalKota)}</div>

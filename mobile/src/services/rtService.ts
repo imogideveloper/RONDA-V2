@@ -381,6 +381,7 @@ export const rtService = {
       user_id: userId,
       surat_type: suratType,
       purpose,
+      applicant_name: clean(applicant?.name),
       nik: clean(applicant?.nik),
       birth_place: clean(applicant?.birthPlace),
       birth_date: clean(applicant?.birthDate),

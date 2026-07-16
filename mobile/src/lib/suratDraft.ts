@@ -36,6 +36,7 @@ export interface SuratDraft {
   pembuka: string;
   isi: string[]; // paragraf isi
   penutup: string;
+  keperluan: string; // frasa keperluan (untuk ditebalkan di dalam paragraf isi)
 }
 
 function nomorSurat(rtNumber: string): string {
@@ -111,5 +112,5 @@ export function buildSuratDraft(ctx: SuratDraftContext): SuratDraft {
       ];
   }
 
-  return { heading, nomor: nomorSurat(ctx.rtNumber), pembuka, isi, penutup };
+  return { heading, nomor: nomorSurat(ctx.rtNumber), pembuka, isi, penutup, keperluan };
 }

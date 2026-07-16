@@ -1,9 +1,9 @@
 // Beranda pengurus (Ketua RT / Bendahara).
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { WargaBerandaHeader, WargaSectionHeader } from '../../components/warga/BerandaWidgets';
@@ -17,6 +17,7 @@ import {
   KasSummary,
   Profile,
   RtUnit,
+  SuratRequest,
   emptyKasSummary,
   iuranIsAwaiting,
   iuranIsPaid,
@@ -25,7 +26,7 @@ import {
   suratIsPending,
 } from '../../types/models';
 import { currentPeriodKey } from '../../lib/papanInfo';
-import { greetingByTime, honorificName } from '../../lib/date';
+import { greetingByTime, honorificName, formatDateShort } from '../../lib/date';
 import type { RootStackParamList } from '../../navigation/types';
 import type { OfficerTabNav } from './PengurusMainShell';
 
@@ -49,6 +50,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
   const [menungguVerifikasi, setMenungguVerifikasi] = useState(0);
   const [paidRate, setPaidRate] = useState(0);
   const [suratPending, setSuratPending] = useState(0);
+  const [pendingSurat, setPendingSurat] = useState<SuratRequest[]>([]);
   const [jiwaExtra, setJiwaExtra] = useState(0);
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,15 +79,20 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
     setPaidRate(cur.length > 0 ? Math.round((paidCur / cur.length) * 100) : 0);
     if (isKetua) {
       const surat = await rtService.getSuratRequests(rt.id, true);
-      setSuratPending(surat.filter(suratIsPending).length);
+      const pend = surat.filter(suratIsPending);
+      setSuratPending(pend.length);
+      setPendingSurat(pend);
     }
     setUnread(await announcementReadService.unreadCount(rt.id, ann));
     setRefreshing(false);
   }, [rt.id, isKetua]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Muat ulang tiap Beranda kembali fokus agar surat/pengumuman baru cepat tampil.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const openAnnouncement = async (a: Announcement) => {
     await announcementReadService.markRead(rt.id, a.id);
@@ -191,7 +198,14 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
           onTrailingTap={() => onNavigateTab(3)}
         />
         <View style={{ height: 10 }} />
-        {announcements.length === 0 ? (
+        {pendingSurat.map((s) => (
+          <SuratMenungguCard
+            key={s.id}
+            surat={s}
+            onTap={() => navigation.navigate('SuratPengantar', { profile, rt })}
+          />
+        ))}
+        {announcements.length === 0 && pendingSurat.length === 0 ? (
           <WargaEmptyState icon="megaphone-outline" message="Belum ada pengumuman. Buat lewat tab Info." />
         ) : (
           announcements.slice(0, 3).map((a) => (
@@ -200,6 +214,30 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// Kartu surat menunggu persetujuan di Papan Info Ketua.
+function SuratMenungguCard({ surat, onTap }: { surat: SuratRequest; onTap: () => void }) {
+  return (
+    <Pressable style={styles.suratCard} onPress={onTap}>
+      <View style={styles.suratIcon}>
+        <Icon name="document-text" size={18} color="#B45309" />
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <View style={styles.suratTopRow}>
+          <View style={styles.suratBadge}>
+            <Text style={styles.suratBadgeText}>MENUNGGU</Text>
+          </View>
+          <Text style={styles.suratDate}>{formatDateShort(surat.createdAt)}</Text>
+        </View>
+        <Text style={styles.suratTitle} numberOfLines={1}>{surat.suratType}</Text>
+        <Text style={styles.suratSub} numberOfLines={1}>
+          {surat.userName ?? 'Warga'} · Menunggu persetujuan
+        </Text>
+      </View>
+      <Icon name="chevron-forward" size={18} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -261,4 +299,15 @@ const styles = StyleSheet.create({
   iuranSub: { flex: 1, borderRadius: 12, padding: 12 },
   iuranSubLabel: { fontSize: 12, color: colors.textSecondary },
   iuranSubValue: { fontSize: 16, fontWeight: '800', marginTop: 4 },
+  suratCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: '#FDE68A', borderRadius: 14, padding: 12, marginBottom: 10,
+  },
+  suratIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' },
+  suratTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
+  suratBadge: { paddingHorizontal: 8, paddingVertical: 2, backgroundColor: '#FEF3C7', borderRadius: 6 },
+  suratBadgeText: { fontSize: 9, fontWeight: '700', color: '#B45309', letterSpacing: 0.3 },
+  suratDate: { fontSize: 11, color: colors.textSecondary },
+  suratTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  suratSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
 });

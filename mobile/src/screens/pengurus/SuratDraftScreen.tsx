@@ -10,6 +10,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { SuratLetterData, SuratLetterPreview } from '../../components/warga/SuratLetterPreview';
 import { exportSuratPdf } from '../../lib/suratPdf';
+import { suratPersonName } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SuratDraft'>;
@@ -21,7 +22,7 @@ export default function SuratDraftScreen({ route }: Props) {
   const data: SuratLetterData = {
     rt,
     suratType: request.suratType,
-    wargaName: request.userName ?? 'Warga',
+    wargaName: suratPersonName(request),
     purpose: request.purpose,
     ketuaName,
     nik: request.nik,

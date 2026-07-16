@@ -274,6 +274,8 @@ export interface SuratRequest {
   createdAt: Date;
   updatedAt: Date | null;
   userName: string | null;
+  // Nama pemohon bila surat untuk anggota keluarga (null = pakai nama akun) — migrasi 021
+  applicantName: string | null;
   // Data pemohon (diisi warga saat mengajukan) — lihat migrasi 015 & 017
   nik: string | null;
   birthPlace: string | null;
@@ -294,6 +296,7 @@ export function suratRequestFromMap(map: Row): SuratRequest {
     createdAt: new Date(map.created_at),
     updatedAt: map.updated_at ? new Date(map.updated_at) : null,
     userName: profiles && typeof profiles === 'object' ? (profiles.full_name ?? null) : null,
+    applicantName: (map.applicant_name as string) ?? null,
     nik: (map.nik as string) ?? null,
     birthPlace: (map.birth_place as string) ?? null,
     birthDate: (map.birth_date as string) ?? null,
@@ -305,6 +308,7 @@ export function suratRequestFromMap(map: Row): SuratRequest {
 }
 
 export interface SuratApplicant {
+  name?: string;
   nik?: string;
   birthPlace?: string;
   birthDate?: string;
@@ -313,6 +317,12 @@ export interface SuratApplicant {
   religion?: string;
   maritalStatus?: string;
 }
+
+/** Nama pemohon surat: nama anggota keluarga bila ada, jika tidak nama akun. */
+export const suratPersonName = (s: SuratRequest, fallback = 'Warga'): string =>
+  (s.applicantName && s.applicantName.trim() !== '' ? s.applicantName.trim() : null) ??
+  s.userName ??
+  fallback;
 
 export const suratIsPending = (s: SuratRequest): boolean => s.status === 'pending';
 export const suratIsApproved = (s: SuratRequest): boolean => s.status === 'approved';

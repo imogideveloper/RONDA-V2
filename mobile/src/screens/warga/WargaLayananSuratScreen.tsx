@@ -17,7 +17,8 @@ import {
 } from '../../components/warga/SuratWidgets';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
-import { SuratRequest, suratIsApproved, suratIsPending, suratIsRejected } from '../../types/models';
+import { wargaHomeLoader } from '../../services/wargaHomeLoader';
+import { SuratRequest, suratIsApproved, suratIsPending, suratIsRejected, suratPersonName } from '../../types/models';
 import { SURAT_CATALOG, SuratItem, suratItemByTypeKey } from '../../lib/suratCatalog';
 import { suratActive, groupByYearMonth } from '../../lib/papanInfo';
 import { SuratLetterData } from '../../components/warga/SuratLetterPreview';
@@ -91,7 +92,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
   const letterDataFromRequest = (r: SuratRequest): SuratLetterData => ({
     rt,
     suratType: r.suratType,
-    wargaName: r.userName ?? profile.fullName,
+    wargaName: suratPersonName(r, profile.fullName),
     purpose: r.purpose,
     ketuaName: '',
     nik: r.nik,
@@ -128,6 +129,8 @@ export default function WargaLayananSuratScreen({ route }: Props) {
     (suratType?: string) => {
       setSegment(0);
       setSubmittedType(suratType ?? 'Surat');
+      // Beranda warga (papan info) pakai cache terpisah — segarkan agar surat baru langsung tampil.
+      wargaHomeLoader.invalidate();
       load();
     },
     [load],
@@ -209,7 +212,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
           <Text style={styles.approvedTitle}>{r.suratType}</Text>
           <Text style={[styles.approvedMeta, rejected && { color: wargaColors.dangerRed }]}>
             {rejected ? 'Ditolak' : 'Disetujui'} {formatDateShort(r.updatedAt ?? r.createdAt)}
-            {r.userName ? ` · a.n. ${r.userName}` : ''}
+            {r.applicantName ? ` · a.n. ${r.applicantName}` : ''}
           </Text>
         </View>
         {!rejected && (
@@ -402,7 +405,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
                   <Text style={styles.detailSectionTitle}>Data Orang dalam Surat</Text>
                 </View>
                 <View style={styles.detailCard}>
-                  <Text style={styles.dataName}>{detailReq.userName ?? profile.fullName}</Text>
+                  <Text style={styles.dataName}>{suratPersonName(detailReq, profile.fullName)}</Text>
                   <Text style={styles.dataSub}>
                     {[detailReq.gender, detailReq.religion].filter(Boolean).join(' • ') || '—'}
                   </Text>

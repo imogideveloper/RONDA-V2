@@ -88,6 +88,11 @@ export const authService = {
     pendingPhone = null;
   },
 
+  async changePassword(newPassword: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  },
+
   // ── Profil ──────────────────────────────────────────────────────
   async updateMyProfile(
     fullName: string,
