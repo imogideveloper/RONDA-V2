@@ -268,7 +268,6 @@ export const rtService = {
       .from('announcements')
       .select('*, profiles(full_name)')
       .eq('rt_id', rtId)
-      .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) throw error;

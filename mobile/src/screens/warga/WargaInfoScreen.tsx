@@ -92,7 +92,10 @@ export function WargaInfoScreen({ profile, rt, onAnnouncementRead }: Props) {
     load();
   };
 
-  const active = items.filter(announcementActive);
+  // Urutkan murni terbaru di atas (abaikan pin untuk urutan).
+  const active = items
+    .filter(announcementActive)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   const expired = items.filter((a) => !announcementActive(a));
 
   return (

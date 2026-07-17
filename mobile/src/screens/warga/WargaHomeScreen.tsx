@@ -30,9 +30,12 @@ import {
   totalTagihan,
 } from '../../types/wargaHomeData';
 import {
+  Announcement,
+  IuranRecord,
   Profile,
   RtUnit,
   SuratRequest,
+  iuranIsAwaiting,
   iuranIsUnpaid,
   iuranPaymentMethodLabel,
   rtDisplayLabel,
@@ -43,6 +46,7 @@ import {
 } from '../../types/models';
 import { formatRupiah } from '../../config/theme';
 import { greetingByTime, formatDateShort, daysLateFromPeriodKey } from '../../lib/date';
+import { iuranPeriodTitle } from '../../lib/period';
 import { announcementActive, billActive, suratOnBoard } from '../../lib/papanInfo';
 
 interface Props {
@@ -59,6 +63,8 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [detailSurat, setDetailSurat] = useState<SuratRequest | null>(null);
+  const [detailBill, setDetailBill] = useState<IuranRecord | null>(null);
+  const [detailInfo, setDetailInfo] = useState<Announcement | null>(null);
 
   const openBayarIuran = useCallback(() => {
     navigation.navigate('WargaTagihanIuran', {
@@ -260,6 +266,127 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
           </View>
         </View>
       </Modal>
+
+      {/* Detail tagihan/iuran dari papan info */}
+      <Modal visible={detailBill != null} transparent animationType="fade" onRequestClose={() => setDetailBill(null)}>
+        <View style={styles.dBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDetailBill(null)} />
+          <View style={styles.dDialog}>
+            {detailBill && (() => {
+              const b = detailBill;
+              const awaiting = iuranIsAwaiting(b);
+              const accent = awaiting ? '#EA580C' : wargaColors.dangerRed;
+              const bg = awaiting ? '#FFF3E0' : wargaColors.lightRed;
+              const late = daysLateFromPeriodKey(b.periodKey);
+              return (
+                <View>
+                  <View style={styles.dTitleRow}>
+                    <Text style={styles.dDialogTitle}>Detail Iuran</Text>
+                    <Pressable onPress={() => setDetailBill(null)} hitSlop={8} style={styles.dClose}>
+                      <Icon name="close-circle-outline" size={22} color={colors.textSecondary} />
+                    </Pressable>
+                  </View>
+                  <View style={styles.dTopRow}>
+                    <View style={[styles.dBadge, { backgroundColor: bg }]}>
+                      <Text style={[styles.dBadgeText, { color: accent }]}>{awaiting ? 'MENUNGGU VERIFIKASI' : 'BELUM LUNAS'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.dMini}>
+                    <View style={styles.dIcon}>
+                      <Icon name={awaiting ? 'time-outline' : 'card-outline'} size={20} color={accent} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.dTitle}>{iuranPeriodTitle(b)}</Text>
+                      <Text style={styles.dMiniSub}>Iuran warga RT</Text>
+                    </View>
+                    <Text style={[styles.dAmount, { color: accent }]}>{formatRupiah(b.amount)}</Text>
+                  </View>
+
+                  <View style={styles.dSectionRow}>
+                    <Icon name="information-circle-outline" size={16} color="#185FA5" />
+                    <Text style={styles.dSectionTitle}>Rincian</Text>
+                  </View>
+                  <View style={styles.dDataCard}>
+                    <View style={styles.dGrid}>
+                      <DataCell label="Periode" value={iuranPeriodTitle(b)} />
+                      <DataCell label="Nominal" value={formatRupiah(b.amount)} />
+                      {awaiting ? (
+                        <DataCell label="Metode" value={iuranPaymentMethodLabel(b)} />
+                      ) : (
+                        <DataCell label="Keterlambatan" value={late > 0 ? `${late} hari` : '—'} />
+                      )}
+                      <DataCell label="Status" value={awaiting ? 'Menunggu verifikasi' : 'Belum dibayar'} />
+                    </View>
+                  </View>
+
+                  {awaiting ? (
+                    <View style={[styles.dStatusBox, { backgroundColor: bg, marginTop: 14 }]}>
+                      <Icon name="time-outline" size={20} color={accent} />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={[styles.dStatusTitle, { color: accent }]}>Menunggu Verifikasi</Text>
+                        <Text style={styles.dStatusSub}>Bukti pembayaran sedang dicek Bendahara RT.</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={styles.dPayBtn}
+                      onPress={() => {
+                        setDetailBill(null);
+                        openBayarIuran();
+                      }}
+                    >
+                      <Icon name="wallet-outline" size={18} color="#fff" />
+                      <Text style={styles.dPayText}>Bayar Sekarang</Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Detail pengumuman dari papan info */}
+      <Modal visible={detailInfo != null} transparent animationType="fade" onRequestClose={() => setDetailInfo(null)}>
+        <View style={styles.dBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDetailInfo(null)} />
+          <View style={styles.dDialog}>
+            {detailInfo && (() => {
+              const a = detailInfo;
+              return (
+                <View>
+                  <View style={styles.dTitleRow}>
+                    <Text style={styles.dDialogTitle}>Detail Pengumuman</Text>
+                    <Pressable onPress={() => setDetailInfo(null)} hitSlop={8} style={styles.dClose}>
+                      <Icon name="close-circle-outline" size={22} color={colors.textSecondary} />
+                    </Pressable>
+                  </View>
+                  <View style={styles.dTopRow}>
+                    <View style={[styles.dBadge, { backgroundColor: a.isPinned ? wargaColors.accentYellow : wargaColors.lightGreen }]}>
+                      <Text style={[styles.dBadgeText, { color: a.isPinned ? '#BA7517' : wargaColors.primaryGreen }]}>
+                        {a.isPinned ? 'PENTING' : 'INFO'}
+                      </Text>
+                    </View>
+                    <Text style={styles.dNomor}>{formatDateShort(a.createdAt)}</Text>
+                  </View>
+                  <View style={styles.dMini}>
+                    <View style={styles.dIcon}>
+                      <Icon name="megaphone-outline" size={20} color={wargaColors.primaryGreen} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.dTitle} numberOfLines={2}>{a.title}</Text>
+                      <Text style={styles.dMiniSub}>Diposting oleh {a.authorName ?? 'Pengurus RT'}</Text>
+                    </View>
+                  </View>
+                  <ScrollView style={{ maxHeight: 320, marginTop: 14 }} showsVerticalScrollIndicator={false}>
+                    <Text style={styles.dInfoBody}>{a.content}</Text>
+                  </ScrollView>
+                </View>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 
@@ -278,6 +405,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
         metaRight: formatDateShort(bill.submittedAt ?? new Date()),
         title: `${bill.periodLabel} — Menunggu Verifikasi`,
         subtitle: `${iuranPaymentMethodLabel(bill)} · ${formatRupiah(bill.amount)}`,
+        onTap: () => setDetailBill(bill),
       });
     }
 
@@ -293,6 +421,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
         metaRight: formatDateShort(new Date()),
         title: `${bill.periodLabel} — Belum lunas`,
         subtitle: `Segera bayar · ${formatRupiah(bill.amount)}`,
+        onTap: () => setDetailBill(bill),
       });
     }
 
@@ -331,6 +460,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
         metaRight: formatDateShort(a.createdAt),
         title: a.title,
         subtitle: a.content.length > 48 ? `${a.content.slice(0, 48)}…` : a.content,
+        onTap: () => setDetailInfo(a),
       });
     }
 
@@ -397,6 +527,10 @@ const styles = StyleSheet.create({
   dKeperluanBox: { backgroundColor: colors.background, borderRadius: 14, padding: 12 },
   dDraftBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: wargaColors.primaryGreen, marginTop: 12 },
   dDraftText: { color: wargaColors.primaryGreen, fontWeight: '700', fontSize: 14 },
+  dAmount: { fontSize: 16, fontWeight: '800' },
+  dPayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 46, borderRadius: 12, backgroundColor: wargaColors.primaryGreen, marginTop: 16 },
+  dPayText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  dInfoBody: { fontSize: 14, color: colors.textPrimary, lineHeight: 21 },
   dKeperluanText: { fontSize: 13, color: colors.textPrimary },
   dTanggalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
   dTanggalLabel: { fontSize: 13, color: colors.textSecondary },

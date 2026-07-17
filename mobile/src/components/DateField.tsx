@@ -2,7 +2,7 @@
 // Konsisten di web & native, selalu di dalam frame app.
 // Nilai (value/onChange) dalam format Indonesia: "12 Mei 1990".
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from './Icon';
 import { colors, wargaColors } from '../config/theme';
 import { indoToISO } from '../lib/dateInput';
@@ -66,9 +66,11 @@ function CalendarModal({
 }) {
   const today = new Date();
   const [view, setView] = useState({ y: today.getFullYear(), m: today.getMonth() });
+  const [mode, setMode] = useState<'days' | 'months' | 'years'>('days');
 
   useEffect(() => {
     if (!visible) return;
+    setMode('days');
     if (selectedISO) {
       const d = new Date(`${selectedISO}T00:00:00`);
       if (!isNaN(d.getTime())) {
@@ -79,6 +81,10 @@ function CalendarModal({
     setView({ y: today.getFullYear(), m: today.getMonth() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, selectedISO]);
+
+  // Daftar tahun untuk pemilih tahun (mundur ~110 tahun, cocok utk tanggal lahir).
+  const years: number[] = [];
+  for (let y = today.getFullYear() + 2; y >= today.getFullYear() - 110; y--) years.push(y);
 
   const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
   const startWeekday = new Date(view.y, view.m, 1).getDay();
@@ -102,38 +108,96 @@ function CalendarModal({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.card}>
           <View style={styles.head}>
-            <Pressable onPress={prevMonth} hitSlop={8} style={styles.navBtn}>
-              <Icon name="chevron-back" size={18} color={colors.textPrimary} />
+            {mode === 'days' ? (
+              <Pressable onPress={prevMonth} hitSlop={8} style={styles.navBtn}>
+                <Icon name="chevron-back" size={18} color={colors.textPrimary} />
+              </Pressable>
+            ) : (
+              <View style={styles.navBtn} />
+            )}
+            <Pressable
+              onPress={() => setMode(mode === 'days' ? 'years' : 'days')}
+              hitSlop={8}
+              style={styles.titleBtn}
+            >
+              <Text style={styles.headTitle}>
+                {mode === 'years' ? 'Pilih Tahun' : mode === 'months' ? `${view.y}` : `${BULAN[view.m]} ${view.y}`}
+              </Text>
+              <Icon name={mode === 'days' ? 'chevron-down' : 'chevron-up'} size={14} color={colors.textSecondary} />
             </Pressable>
-            <Text style={styles.headTitle}>{BULAN[view.m]} {view.y}</Text>
-            <Pressable onPress={nextMonth} hitSlop={8} style={styles.navBtn}>
-              <Icon name="chevron-forward" size={18} color={colors.textPrimary} />
-            </Pressable>
+            {mode === 'days' ? (
+              <Pressable onPress={nextMonth} hitSlop={8} style={styles.navBtn}>
+                <Icon name="chevron-forward" size={18} color={colors.textPrimary} />
+              </Pressable>
+            ) : (
+              <View style={styles.navBtn} />
+            )}
           </View>
 
-          <View style={styles.weekRow}>
-            {HARI_PENDEK.map((h) => (
-              <Text key={h} style={styles.weekCell}>{h}</Text>
-            ))}
-          </View>
-
-          {rows.map((row, ri) => (
-            <View key={ri} style={styles.weekRow}>
-              {row.map((d, ci) => {
-                if (d == null) return <View key={ci} style={styles.dayCell} />;
-                const iso = `${view.y}-${pad(view.m + 1)}-${pad(d)}`;
-                const isSelected = iso === selectedISO;
-                const isToday = iso === todayISO;
+          {mode === 'years' ? (
+            <ScrollView style={{ height: 240 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.gridWrap}>
+                {years.map((y) => {
+                  const sel = y === view.y;
+                  return (
+                    <Pressable
+                      key={y}
+                      style={[styles.gridCell, sel && styles.gridCellSel]}
+                      onPress={() => {
+                        setView((v) => ({ ...v, y }));
+                        setMode('months');
+                      }}
+                    >
+                      <Text style={[styles.gridText, sel && styles.gridTextSel]}>{y}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          ) : mode === 'months' ? (
+            <View style={[styles.gridWrap, { height: 240, alignContent: 'center' }]}>
+              {BULAN.map((b, mi) => {
+                const sel = mi === view.m;
                 return (
-                  <Pressable key={ci} style={styles.dayCell} onPress={() => pick(d)}>
-                    <View style={[styles.dayInner, isSelected && styles.daySelected, !isSelected && isToday && styles.dayToday]}>
-                      <Text style={[styles.dayText, isSelected && styles.daySelectedText]}>{d}</Text>
-                    </View>
+                  <Pressable
+                    key={b}
+                    style={[styles.gridCell, sel && styles.gridCellSel]}
+                    onPress={() => {
+                      setView((v) => ({ ...v, m: mi }));
+                      setMode('days');
+                    }}
+                  >
+                    <Text style={[styles.gridText, sel && styles.gridTextSel]}>{b.slice(0, 3)}</Text>
                   </Pressable>
                 );
               })}
             </View>
-          ))}
+          ) : (
+            <>
+              <View style={styles.weekRow}>
+                {HARI_PENDEK.map((h) => (
+                  <Text key={h} style={styles.weekCell}>{h}</Text>
+                ))}
+              </View>
+              {rows.map((row, ri) => (
+                <View key={ri} style={styles.weekRow}>
+                  {row.map((d, ci) => {
+                    if (d == null) return <View key={ci} style={styles.dayCell} />;
+                    const iso = `${view.y}-${pad(view.m + 1)}-${pad(d)}`;
+                    const isSelected = iso === selectedISO;
+                    const isToday = iso === todayISO;
+                    return (
+                      <Pressable key={ci} style={styles.dayCell} onPress={() => pick(d)}>
+                        <View style={[styles.dayInner, isSelected && styles.daySelected, !isSelected && isToday && styles.dayToday]}>
+                          <Text style={[styles.dayText, isSelected && styles.daySelectedText]}>{d}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </>
+          )}
 
           <View style={styles.footer}>
             <Pressable onPress={onClear} hitSlop={8}>
@@ -166,8 +230,14 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   card: { width: '100%', maxWidth: 340, backgroundColor: colors.surface, borderRadius: 18, padding: 16 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  titleBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   headTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   navBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  gridCell: { width: '25%', paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+  gridCellSel: {},
+  gridText: { fontSize: 14, color: colors.textPrimary },
+  gridTextSel: { color: wargaColors.primaryGreen, fontWeight: '800' },
   weekRow: { flexDirection: 'row' },
   weekCell: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', color: colors.textSecondary, paddingVertical: 6 },
   dayCell: { flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },

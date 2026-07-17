@@ -1,5 +1,5 @@
 // Port dari lib/pages/pengumuman/create_announcement_page.dart
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
-import { ANNOUNCEMENT_TEMPLATES, AnnouncementTemplate } from '../../lib/announcementTemplates';
+import { ANNOUNCEMENT_TEMPLATES, AnnouncementTemplate, TemplateField } from '../../lib/announcementTemplates';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radius, wargaColors } from '../../config/theme';
@@ -23,6 +23,8 @@ import { hariFromDate, indoToISO } from '../../lib/dateInput';
 import { wargaText } from '../../components/warga/wargaUi';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
+import { wargaDirectoryService } from '../../services/wargaDirectoryService';
+import { directoryIsWarga } from '../../types/directory';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateAnnouncement'>;
@@ -38,19 +40,87 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
   const [lokasi, setLokasi] = useState('');
   const [jamOptions, setJamOptions] = useState<string[]>([]);
   const [lokasiOptions, setLokasiOptions] = useState<string[]>([]);
+  const [fields, setFields] = useState<TemplateField[]>([]);
+  const [fieldValues, setFieldValues] = useState<Record<string, string | string[]>>({});
+  const [templateContent, setTemplateContent] = useState('');
   const [pinned, setPinned] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Daftar kepala keluarga + alamat (untuk field wargaSelect, mis. Ucapan Duka Cita).
+  const [wargaList, setWargaList] = useState<{ name: string; address: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [dir, rt] = await Promise.all([
+          wargaDirectoryService.getDirectory(rtId).catch(() => []),
+          rtService.getRtById(rtId).catch(() => null),
+        ]);
+        const rtAddr = rt?.address ?? '';
+        setWargaList(
+          dir
+            .filter(directoryIsWarga)
+            .map((e) => ({ name: e.fullName, address: e.blokRumah && e.blokRumah.trim() !== '' ? e.blokRumah : rtAddr })),
+        );
+      } catch {
+        // abaikan
+      }
+    })();
+  }, [rtId]);
+
+  // Ganti tiap token ({AGENDA}, {NOMINAL}, ...) di template dengan nilai field.
+  const fillContent = (tpl: string, flds: TemplateField[], values: Record<string, string | string[]>) => {
+    let out = tpl;
+    for (const f of flds) {
+      const v = values[f.token];
+      let text: string;
+      if (f.type === 'multiselect') {
+        const arr = (v as string[]) ?? [];
+        text = arr.length > 0 ? arr.map((a, i) => `${i + 1}. ${a}`).join('\n') : `(pilih ${f.label.toLowerCase()})`;
+      } else {
+        const s = ((v as string) ?? '').trim();
+        text = s !== '' ? s : `(isi ${f.label.toLowerCase()})`;
+      }
+      out = out.split(f.token).join(text);
+    }
+    return out;
+  };
+
+  const updateField = (token: string, value: string | string[]) => {
+    updateFields({ [token]: value });
+  };
+
+  // Update beberapa field sekaligus (mis. Nama + Alamat) lalu rebuild isi sekali.
+  const updateFields = (patch: Record<string, string | string[]>) => {
+    const next = { ...fieldValues, ...patch };
+    setFieldValues(next);
+    setContent(fillContent(templateContent, fields, next));
+  };
+
+  // Pilih kepala keluarga -> isi Nama + Alamat (dari data warga / RT) sekaligus.
+  const pickWarga = (f: TemplateField, name: string) => {
+    const w = wargaList.find((x) => x.name === name);
+    const patch: Record<string, string | string[]> = { [f.token]: name };
+    if (f.autoAddressToken) patch[f.autoAddressToken] = w?.address ?? '';
+    updateFields(patch);
+  };
 
   const applyTemplate = (t: AnnouncementTemplate) => {
     setTitle(t.title);
-    setContent(t.content);
     if (t.suggestPinned) setPinned(true);
     // Jam & Lokasi -> dropdown preset dari template (reset pilihan sebelumnya).
     setJamOptions(t.jamOptions ?? []);
     setLokasiOptions(t.lokasiOptions ?? []);
     setJam('');
     setLokasi('');
+    // Field template (dropdown/teks) untuk placeholder di isi.
+    const flds = t.fields ?? [];
+    const init: Record<string, string | string[]> = {};
+    for (const f of flds) init[f.token] = f.type === 'multiselect' ? [] : '';
+    setFields(flds);
+    setFieldValues(init);
+    setTemplateContent(t.content);
+    setContent(fillContent(t.content, flds, init));
     setPickerOpen(false);
   };
 
@@ -59,12 +129,21 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
     setContent('');
     setJamOptions([]);
     setLokasiOptions([]);
+    setFields([]);
+    setFieldValues({});
+    setTemplateContent('');
     setPickerOpen(false);
   };
 
   const submit = async () => {
     if (title.trim() === '') return toast.error('Judul wajib diisi');
     if (content.trim() === '') return toast.error('Isi pengumuman wajib diisi');
+    // Field template wajib dilengkapi.
+    for (const f of fields) {
+      const v = fieldValues[f.token];
+      const empty = f.type === 'multiselect' ? !(v as string[])?.length : !((v as string) ?? '').trim();
+      if (empty) return toast.error(`Lengkapi: ${f.label}`);
+    }
     if (hari.trim() === '') return toast.error('Hari wajib diisi');
     if (tanggal.trim() === '') return toast.error('Tanggal wajib diisi');
     if (jam.trim() === '') return toast.error('Jam wajib diisi');
@@ -116,12 +195,12 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
       <WargaAppBar title="Buat Pengumuman" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.label}>Pilih judul (template)</Text>
+          <Text style={styles.label}>Gunakan template (opsional)</Text>
           <View style={[styles.selectWrap, pickerOpen && { zIndex: 100 }]}>
             <Pressable style={[styles.dropdown, pickerOpen && styles.dropdownOpen]} onPress={() => setPickerOpen((o) => !o)}>
               <Icon name="document-text-outline" size={18} color={wargaColors.primaryGreen} />
               <Text style={[styles.dropdownText, title === '' && { color: colors.textHint }]} numberOfLines={1}>
-                {title === '' ? 'Pilih judul pengumuman…' : title}
+                {title === '' ? 'Pilih template pengumuman…' : title}
               </Text>
               <Icon name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
             </Pressable>
@@ -146,10 +225,39 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
               </View>
             )}
           </View>
-          <Text style={styles.helperSmall}>Pilih dari daftar — judul & isi terisi otomatis, lalu bisa diedit.</Text>
+          <Text style={styles.helperSmall}>Opsional — mengisi Judul & Isi otomatis, lalu bisa diedit. Judul di bawah yang tampil ke warga.</Text>
 
           <Text style={styles.label}>Judul</Text>
           <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Contoh: Kerja Bakti Lingkungan" placeholderTextColor={colors.textHint} />
+
+          {fields.map((f, i) => (
+            <View key={f.token} style={{ position: 'relative', zIndex: fields.length - i }}>
+              <Text style={styles.label}>{f.label}</Text>
+              {f.type === 'multiselect' ? (
+                <AgendaSelect options={f.options ?? []} selected={(fieldValues[f.token] as string[]) ?? []} onChange={(v) => updateField(f.token, v)} />
+              ) : f.type === 'wargaSelect' ? (
+                <TemplateSelect
+                  value={(fieldValues[f.token] as string) ?? ''}
+                  options={wargaList.map((w) => w.name)}
+                  placeholder={wargaList.length === 0 ? 'Belum ada data warga' : 'Pilih kepala keluarga'}
+                  onChange={(v) => pickWarga(f, v)}
+                />
+              ) : f.type === 'select' ? (
+                <TemplateSelect value={(fieldValues[f.token] as string) ?? ''} options={f.options ?? []} placeholder={`Pilih ${f.label.toLowerCase()}`} onChange={(v) => updateField(f.token, v)} />
+              ) : (
+                <TextInput
+                  style={styles.input}
+                  value={(fieldValues[f.token] as string) ?? ''}
+                  onChangeText={(v) => updateField(f.token, v)}
+                  placeholder={f.placeholder ?? ''}
+                  placeholderTextColor={colors.textHint}
+                />
+              )}
+            </View>
+          ))}
+          {fields.length > 0 && (
+            <Text style={styles.helperSmall}>Isi/pilih di atas — otomatis masuk ke isi pengumuman.</Text>
+          )}
 
           <Text style={styles.label}>Isi pengumuman</Text>
           <TextInput
@@ -267,6 +375,51 @@ function TemplateSelect({
               <Icon name="create-outline" size={16} color={colors.textSecondary} />
               <Text style={[styles.optionText, { color: colors.textSecondary }]}>Lainnya (tulis sendiri)</Text>
             </Pressable>
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Dropdown multi-pilih agenda rapat.
+function AgendaSelect({
+  options,
+  selected,
+  onChange,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (opt: string) => {
+    onChange(selected.includes(opt) ? selected.filter((o) => o !== opt) : [...selected, opt]);
+    setOpen(false); // tutup setelah memilih; buka lagi untuk menambah agenda lain
+  };
+  const label = selected.length === 0 ? 'Pilih agenda…' : `${selected.length} agenda dipilih`;
+
+  return (
+    <View style={[styles.selectWrap, open && { zIndex: 100 }]}>
+      <Pressable style={[styles.dropdown, open && styles.dropdownOpen]} onPress={() => setOpen((o) => !o)}>
+        <Icon name="list-outline" size={18} color={wargaColors.primaryGreen} />
+        <Text style={[styles.dropdownText, selected.length === 0 && { color: colors.textHint }]} numberOfLines={1}>
+          {label}
+        </Text>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+      </Pressable>
+      {open && (
+        <View style={styles.menu}>
+          <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+            {options.map((opt) => {
+              const on = selected.includes(opt);
+              return (
+                <Pressable key={opt} style={[styles.optionRow, on && styles.optionRowActive]} onPress={() => toggle(opt)}>
+                  <Icon name={on ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={on ? wargaColors.primaryGreen : colors.textSecondary} />
+                  <Text style={[styles.optionText, on && { color: wargaColors.primaryGreen, fontWeight: '600' }]}>{opt}</Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
         </View>
       )}

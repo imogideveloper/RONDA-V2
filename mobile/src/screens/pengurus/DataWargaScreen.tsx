@@ -15,9 +15,6 @@ import {
 } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radius, wargaColors } from '../../config/theme';
@@ -26,7 +23,10 @@ import { WargaCard, StatusChip, wargaText } from '../../components/warga/wargaUi
 import { PrimaryButton } from '../../components/Card';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
-import { TEMPLATE_CSV, parseCsv, wargaDirectoryService } from '../../services/wargaDirectoryService';
+import { wargaDirectoryService } from '../../services/wargaDirectoryService';
+import { exportHtmlAsPdf } from '../../lib/suratPdf';
+import { extractPdfLines } from '../../lib/pdfText';
+import { buildWargaTemplateHtml, parseWargaFromPdfText } from '../../lib/wargaImportPdf';
 import {
   WargaDirectoryEntry,
   directoryIsBendahara,
@@ -37,21 +37,6 @@ import { profileIsKetua } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DataWarga'>;
-
-// Unduh teks sebagai file di web (buat Blob + klik anchor download tersembunyi).
-function downloadCsvWeb(filename: string, content: string) {
-  const doc: any = (globalThis as any).document;
-  if (!doc) return;
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = doc.createElement('a');
-  a.href = url;
-  a.download = filename;
-  doc.body.appendChild(a);
-  a.click();
-  doc.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 export default function DataWargaScreen({ route, navigation }: Props) {
   const { profile, rt } = route.params;
@@ -95,50 +80,41 @@ export default function DataWargaScreen({ route, navigation }: Props) {
 
   const downloadTemplate = async () => {
     setMenuOpen(false);
-    // Web: unduh file .csv sungguhan lewat mekanisme download browser.
-    if (Platform.OS === 'web') {
-      downloadCsvWeb('template_data_warga_rt.csv', TEMPLATE_CSV);
-      toast.success('Template CSV diunduh');
-      return;
-    }
     try {
-      const uri = `${FileSystem.cacheDirectory}template_data_warga_rt.csv`;
-      await FileSystem.writeAsStringAsync(uri, TEMPLATE_CSV);
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Template Data Warga RT' });
-      } else {
-        await Clipboard.setStringAsync(TEMPLATE_CSV);
-        toast.success('Template disalin ke clipboard');
-      }
+      // Isi PDF dengan data warga terdaftar + baris kosong untuk tambah baru.
+      const rows = all.map((e) => ({
+        full_name: e.fullName,
+        phone: e.phone,
+        email: e.email ?? '',
+        blok_rumah: e.blokRumah ?? '',
+      }));
+      await exportHtmlAsPdf(buildWargaTemplateHtml(rows), 'Data Warga RT', 'Data-Warga-RT.pdf');
     } catch (e: any) {
-      // Fallback: salin ke clipboard
-      await Clipboard.setStringAsync(TEMPLATE_CSV);
-      toast.success('Template disalin ke clipboard');
+      toast.error(`Gagal membuat PDF: ${String(e?.message ?? e)}`);
     }
   };
 
-  const importCsv = async () => {
+  const importPdf = async () => {
     setMenuOpen(false);
-    const result = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/plain', '*/*'] });
-    if (result.canceled || result.assets.length === 0) return;
-    const asset = result.assets[0];
-    let raw = '';
-    try {
-      raw = await FileSystem.readAsStringAsync(asset.uri);
-    } catch {
-      raw = await (await fetch(asset.uri)).text();
-    }
-    const rows = parseCsv(raw);
-    if (rows.length === 0) {
-      toast.error('File kosong atau format tidak dikenali');
+    if (Platform.OS !== 'web') {
+      toast.error('Import PDF saat ini tersedia di web. Di HP gunakan versi web dulu.');
       return;
     }
+    const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', '*/*'] });
+    if (result.canceled || result.assets.length === 0) return;
+    const asset = result.assets[0];
     try {
-      const stats = await wargaDirectoryService.importFromRows(rows);
+      const text = await extractPdfLines(asset.uri);
+      const rows = parseWargaFromPdfText(text);
+      if (rows.length === 0) {
+        toast.error('Tidak ada data terbaca. Pastikan PDF berupa teks (bukan foto) & tiap baris memuat No. HP.');
+        return;
+      }
+      const stats = await wargaDirectoryService.importFromRows(rows as unknown as Array<Record<string, string>>);
       await load();
-      toast.success(`Import: ${stats.inserted} baru, ${stats.updated} diperbarui, ${stats.skipped} dilewati`);
+      toast.success(`Import PDF: ${stats.inserted} baru, ${stats.updated} diperbarui, ${stats.skipped} dilewati`);
     } catch (e: any) {
-      toast.error(String(e?.message ?? e));
+      toast.error(`Gagal impor PDF: ${String(e?.message ?? e)}`);
     }
   };
 
@@ -236,11 +212,11 @@ export default function DataWargaScreen({ route, navigation }: Props) {
           <View style={styles.menu}>
             <Pressable style={styles.menuItem} onPress={downloadTemplate}>
               <Icon name="download-outline" size={20} color={colors.emerald} />
-              <Text style={styles.menuText}>Unduh template CSV</Text>
+              <Text style={styles.menuText}>Unduh data warga (PDF)</Text>
             </Pressable>
-            <Pressable style={styles.menuItem} onPress={importCsv}>
+            <Pressable style={styles.menuItem} onPress={importPdf}>
               <Icon name="cloud-upload-outline" size={20} color={colors.emerald} />
-              <Text style={styles.menuText}>Import data warga</Text>
+              <Text style={styles.menuText}>Import data warga (PDF)</Text>
             </Pressable>
           </View>
         </Pressable>

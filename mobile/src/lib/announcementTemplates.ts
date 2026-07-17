@@ -1,7 +1,20 @@
 // Draft pengumuman siap-pakai untuk Ketua RT.
 // Judul dipilih dari dropdown; isi (narasi) terisi otomatis (masih bisa diedit).
+// Placeholder di isi diganti TOKEN ({AGENDA}, {NOMINAL}, dst) yang diisi lewat `fields`
+// (dropdown/multi-pilih/teks) — bukan lagi ngedit [ ... ] manual di dalam teks.
 // Jam & Lokasi juga punya preset (jamOptions/lokasiOptions) yang tampil sebagai dropdown.
-// Bagian [dalam kurung siku] adalah placeholder untuk disesuaikan Ketua RT.
+
+export type TemplateFieldType = 'select' | 'multiselect' | 'text' | 'wargaSelect';
+
+export interface TemplateField {
+  token: string; // mis. '{AGENDA}' — muncul di content
+  label: string; // mis. 'Agenda Rapat'
+  type: TemplateFieldType;
+  options?: string[]; // untuk select / multiselect
+  placeholder?: string; // untuk text
+  // untuk wargaSelect: token field alamat yang diisi otomatis dari alamat warga terpilih
+  autoAddressToken?: string;
+}
 
 export interface AnnouncementTemplate {
   title: string;
@@ -9,6 +22,7 @@ export interface AnnouncementTemplate {
   suggestPinned?: boolean;
   jamOptions?: string[];
   lokasiOptions?: string[];
+  fields?: TemplateField[];
 }
 
 export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
@@ -27,50 +41,75 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
     title: 'Jadwal Ronda Malam',
     content:
       'Kepada seluruh warga, dalam rangka menjaga keamanan lingkungan akan dilaksanakan ronda malam ' +
-      'sesuai jadwal berikut.\n\n' +
-      'Pembagian regu:\n' +
-      '• Malam Senin: [nama-nama]\n' +
-      '• Malam Selasa: [nama-nama]\n' +
-      '• Malam Rabu: [nama-nama]\n\n' +
-      'Mohon setiap regu hadir sesuai jadwal. Bila berhalangan, harap mencari pengganti dan mengabari koordinator. Terima kasih.',
+      'sesuai jadwal yang telah ditentukan.\n\n' +
+      'Mohon setiap regu hadir tepat waktu sesuai giliran. Bila berhalangan, harap mencari pengganti ' +
+      'dan mengabari koordinator ronda. Terima kasih.',
     jamOptions: ['21.00 s.d. 03.00 WIB', '22.00 s.d. 04.00 WIB', '23.00 s.d. 04.00 WIB'],
     lokasiOptions: ['Pos Ronda RT', 'Keliling lingkungan RT'],
   },
   {
     title: 'Rapat Warga RT',
     content:
-      'Mengundang Bapak/Ibu warga untuk hadir dalam rapat rutin RT guna membahas ' +
-      '[agenda: program kerja / iuran / kegiatan bersama].\n\n' +
-      'Agenda:\n' +
-      '1. [poin pertama]\n' +
-      '2. [poin kedua]\n' +
-      '3. Lain-lain\n\n' +
+      'Mengundang Bapak/Ibu warga untuk hadir dalam rapat rutin RT guna membahas beberapa hal penting berikut.\n\n' +
+      'Agenda:\n{AGENDA}\n\n' +
       'Kehadiran Bapak/Ibu sangat penting untuk kemajuan lingkungan kita. Atas perhatiannya, terima kasih.',
+    fields: [
+      {
+        token: '{AGENDA}',
+        label: 'Agenda Rapat',
+        type: 'multiselect',
+        options: [
+          'Program kerja RT',
+          'Pembahasan iuran warga',
+          'Kegiatan bersama warga',
+          'Kebersihan lingkungan',
+          'Keamanan lingkungan',
+          'Persiapan acara / HUT RI',
+          'Penggunaan kas RT',
+          'Lain-lain',
+        ],
+      },
+    ],
     jamOptions: ['16.00 WIB s.d. selesai', '19.30 WIB s.d. selesai', '20.00 WIB s.d. selesai'],
     lokasiOptions: ['Balai Warga', 'Rumah Ketua RT', 'Aula RW'],
   },
   {
     title: 'Pembayaran Iuran Bulanan',
     content:
-      'Kepada seluruh warga, kami ingatkan mengenai iuran bulanan RT sebesar Rp [50.000] per bulan, ' +
-      'dengan jatuh tempo paling lambat tanggal [10] setiap bulan.\n\n' +
+      'Kepada seluruh warga, kami ingatkan mengenai iuran bulanan RT sebesar Rp {NOMINAL} per bulan, ' +
+      'dengan jatuh tempo paling lambat tanggal {TEMPO} setiap bulan.\n\n' +
       'Pembayaran dapat dilakukan melalui aplikasi (QRIS/transfer) atau tunai ke Bendahara. ' +
       'Iuran digunakan untuk kas kebersihan, keamanan, dan kegiatan warga. ' +
       'Bagi yang sudah membayar, kami ucapkan terima kasih.',
-    jamOptions: ['Jam kerja (08.00–17.00 WIB)', 'Setiap saat via aplikasi'],
-    lokasiOptions: ['Rumah Bendahara RT', 'Via aplikasi (QRIS/transfer)'],
+    fields: [
+      { token: '{NOMINAL}', label: 'Nominal Iuran (Rp)', type: 'text', placeholder: 'mis. 50.000' },
+      { token: '{TEMPO}', label: 'Jatuh Tempo (tanggal)', type: 'select', options: ['5', '10', '15', '20', '25', 'akhir bulan'] },
+    ],
   },
   {
     title: 'Peringatan Keamanan Lingkungan',
     content:
       '⚠️ HIMBAUAN KEAMANAN\n\n' +
-      'Sehubungan dengan [adanya laporan kejadian / peningkatan kewaspadaan], seluruh warga dihimbau untuk:\n\n' +
+      'Sehubungan dengan {ALASAN}, seluruh warga dihimbau untuk:\n\n' +
       '• Selalu mengunci pintu, pagar, dan kendaraan.\n' +
       '• Tidak memarkir kendaraan di luar dengan kunci tertinggal.\n' +
       '• Melapor ke petugas ronda / Ketua RT bila melihat aktivitas mencurigakan.\n' +
       '• Menyalakan lampu depan rumah pada malam hari.\n\n' +
       'Mari saling menjaga keamanan lingkungan kita. Terima kasih atas perhatian dan kerja samanya.',
     suggestPinned: true,
+    fields: [
+      {
+        token: '{ALASAN}',
+        label: 'Latar Belakang',
+        type: 'select',
+        options: [
+          'adanya laporan kejadian di lingkungan',
+          'peningkatan kewaspadaan keamanan',
+          'maraknya pencurian di sekitar wilayah',
+          'menjelang libur panjang',
+        ],
+      },
+    ],
     jamOptions: ['Setiap malam', '18.00 WIB s.d. pagi', 'Berlaku sampai pemberitahuan berikutnya'],
     lokasiOptions: ['Seluruh lingkungan RT'],
   },
@@ -100,22 +139,37 @@ export const ANNOUNCEMENT_TEMPLATES: AnnouncementTemplate[] = [
   {
     title: 'Informasi Pemadaman Listrik/Air',
     content:
-      'Diberitahukan kepada seluruh warga bahwa akan ada pemadaman [listrik/air] sementara ' +
-      'karena [pemeliharaan jaringan / perbaikan].\n\n' +
-      'Mohon warga mempersiapkan [cadangan air / penerangan] secukupnya. ' +
+      'Diberitahukan kepada seluruh warga bahwa akan ada pemadaman {JENIS} sementara ' +
+      'karena {SEBAB}.\n\n' +
+      'Mohon warga mempersiapkan {PERSIAPAN} secukupnya. ' +
       'Mohon maaf atas ketidaknyamanannya.',
-    jamOptions: ['09.00 s.d. 15.00 WIB', '10.00 s.d. 14.00 WIB', 'Sepanjang hari'],
-    lokasiOptions: ['Seluruh wilayah RT', 'Sebagian blok RT'],
+    fields: [
+      { token: '{JENIS}', label: 'Jenis Pemadaman', type: 'select', options: ['listrik', 'air', 'listrik & air'] },
+      {
+        token: '{SEBAB}',
+        label: 'Penyebab',
+        type: 'select',
+        options: ['pemeliharaan jaringan', 'perbaikan kerusakan', 'penggantian meteran', 'pekerjaan proyek'],
+      },
+      {
+        token: '{PERSIAPAN}',
+        label: 'Yang Perlu Disiapkan',
+        type: 'select',
+        options: ['cadangan air', 'penerangan (lampu/senter)', 'cadangan air & penerangan'],
+      },
+    ],
   },
   {
     title: 'Ucapan Duka Cita',
     content:
       'Innalillahi wa inna ilaihi rajiun.\n\n' +
-      'Telah berpulang ke Rahmatullah, [Nama Almarhum/Almarhumah], warga [blok/alamat].\n\n' +
+      'Telah berpulang ke Rahmatullah, {NAMA}, warga {ALAMAT}.\n\n' +
       'Segenap warga RT turut berduka cita yang sedalam-dalamnya. Semoga almarhum/almarhumah ' +
       'husnul khatimah dan keluarga yang ditinggalkan diberi ketabahan.',
     suggestPinned: true,
-    jamOptions: ['Menyusul', 'Ba’da Dzuhur', 'Ba’da Ashar'],
-    lokasiOptions: ['Rumah duka', 'Masjid setempat', 'TPU setempat'],
+    fields: [
+      { token: '{NAMA}', label: 'Nama (Kepala Keluarga)', type: 'wargaSelect', autoAddressToken: '{ALAMAT}' },
+      { token: '{ALAMAT}', label: 'Blok / Alamat', type: 'text', placeholder: 'Otomatis dari data warga' },
+    ],
   },
 ];
