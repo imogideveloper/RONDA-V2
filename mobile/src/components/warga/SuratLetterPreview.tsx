@@ -29,6 +29,7 @@ export interface SuratLetterData {
   gender?: string | null;
   religion?: string | null;
   maritalStatus?: string | null;
+  address?: string | null; // alamat rumah warga (dari KK); jika kosong pakai alamat RT
 }
 
 const orBlank = (s?: string | null) => (s && s.trim() !== '' ? s.trim() : BLANK);
@@ -46,7 +47,7 @@ function fields(d: SuratLetterData) {
     religion: orBlank(d.religion),
     status: orBlank(d.maritalStatus),
     pekerjaan: orBlank(d.occupation),
-    alamat: d.rt.address ?? '-',
+    alamat: (d.address && d.address.trim() !== '' ? d.address : d.rt.address) ?? '-',
   };
 }
 

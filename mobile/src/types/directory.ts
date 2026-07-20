@@ -14,6 +14,7 @@ export interface WargaDirectoryEntry {
   isPendingImport: boolean;
   isKetua: boolean;
   avatarUrl: string | null;
+  approvalStatus: string; // 'pending' | 'approved' | 'rejected' (akun) — migrasi 023
 }
 
 export function directoryFromProfile(p: Profile): WargaDirectoryEntry {
@@ -22,11 +23,12 @@ export function directoryFromProfile(p: Profile): WargaDirectoryEntry {
     fullName: p.fullName,
     phone: p.phone,
     email: null,
-    blokRumah: null,
+    blokRumah: p.address ?? null, // alamat rumah dari KK (migrasi 022)
     role: p.role,
     isPendingImport: false,
     isKetua: profileIsKetua(p),
     avatarUrl: p.avatarUrl ?? null,
+    approvalStatus: p.approvalStatus,
   };
 }
 
@@ -41,8 +43,12 @@ export function directoryFromRegistry(map: Row): WargaDirectoryEntry {
     isPendingImport: true,
     isKetua: false,
     avatarUrl: null,
+    approvalStatus: 'approved',
   };
 }
+
+export const directoryIsPendingApproval = (e: WargaDirectoryEntry): boolean =>
+  !e.isPendingImport && e.approvalStatus === 'pending';
 
 export function directoryRoleLabel(e: WargaDirectoryEntry): string {
   switch (e.role) {

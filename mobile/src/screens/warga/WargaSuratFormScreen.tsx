@@ -84,6 +84,7 @@ export default function WargaSuratFormScreen({ route, navigation }: Props) {
     gender,
     religion,
     maritalStatus,
+    address: profile.address,
   };
 
   // Keperluan = teks apa adanya (tanpa penanda "[Diri sendiri (…)]"),

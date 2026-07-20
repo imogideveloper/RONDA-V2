@@ -195,6 +195,28 @@ export const rtService = {
     if (error) throw error;
   },
 
+  // ── Persetujuan warga baru (Ketua) ───────────────────────────────
+  async approveWarga(wargaId: string): Promise<void> {
+    const { error } = await supabase.rpc('ketua_approve_warga', { p_warga_id: wargaId });
+    if (error) throw error;
+  },
+
+  async rejectWarga(wargaId: string): Promise<void> {
+    const { error } = await supabase.rpc('ketua_reject_warga', { p_warga_id: wargaId });
+    if (error) throw error;
+  },
+
+  /** Jumlah warga menunggu persetujuan di RT (untuk lonceng Ketua). */
+  async countPendingWarga(rtId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('rt_id', rtId)
+      .eq('approval_status', 'pending');
+    if (error) return 0;
+    return count ?? 0;
+  },
+
   async getRtMembers(): Promise<Profile[]> {
     const userId = await currentUserId();
     if (userId == null) return [];
@@ -357,7 +379,7 @@ export const rtService = {
       const userId = await currentUserId();
       let query = supabase
         .from('surat_requests')
-        .select('*, profiles(full_name, nik, occupation, marital_status)')
+        .select('*, profiles(full_name, nik, occupation, marital_status, address)')
         .eq('rt_id', rtId);
       if (!allRt && userId != null) query = query.eq('user_id', userId);
       const { data } = await query.order('created_at', { ascending: false }).limit(30);

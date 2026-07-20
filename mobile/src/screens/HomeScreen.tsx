@@ -9,7 +9,8 @@ import { useToast } from '../components/Toast';
 import { authService } from '../services/authService';
 import { rtService } from '../services/rtService';
 import { wargaDirectoryService } from '../services/wargaDirectoryService';
-import { Profile, RtUnit, profileHasRt, profileIsWarga } from '../types/models';
+import { Profile, RtUnit, profileHasRt, profileIsPending, profileIsWarga } from '../types/models';
+import { PendingApprovalScreen } from './PendingApprovalScreen';
 import { WargaMainShell } from './warga/WargaMainShell';
 import { PengurusMainShell } from './pengurus/PengurusMainShell';
 import { OnboardingScreen } from './onboarding/OnboardingScreen';
@@ -79,6 +80,11 @@ export default function HomeScreen({ navigation }: Props) {
   // Belum punya RT → Onboarding (buat / gabung RT).
   if (!profileHasRt(profile) || rt == null) {
     return <OnboardingScreen profile={profile} onDone={load} onLogout={logout} />;
+  }
+
+  // Warga baru menunggu persetujuan Ketua RT → gerbang (belum bisa pakai app).
+  if (profileIsWarga(profile) && profileIsPending(profile)) {
+    return <PendingApprovalScreen profile={profile} rt={rt} onRefresh={load} onLogout={logout} />;
   }
 
   if (profileIsWarga(profile)) {

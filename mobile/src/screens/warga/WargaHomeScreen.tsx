@@ -224,7 +224,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
                       <DataCell label="Pekerjaan" value={s.submitterOccupation} />
                       <DataCell label="Status" value={s.submitterMaritalStatus} />
                     </View>
-                    <DataCell label="Alamat" value={rt.address} full />
+                    <DataCell label="Alamat" value={s.submitterAddress ?? rt.address} full />
                   </View>
 
                   {/* Keperluan */}

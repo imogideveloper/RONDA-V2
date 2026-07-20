@@ -31,6 +31,7 @@ import {
   WargaDirectoryEntry,
   directoryIsBendahara,
   directoryIsWarga,
+  directoryIsPendingApproval,
   directoryRoleLabel,
 } from '../../types/directory';
 import { profileIsKetua } from '../../types/models';
@@ -91,6 +92,26 @@ export default function DataWargaScreen({ route, navigation }: Props) {
       await exportHtmlAsPdf(buildWargaTemplateHtml(rows), 'Data Warga RT', 'Data-Warga-RT.pdf');
     } catch (e: any) {
       toast.error(`Gagal membuat PDF: ${String(e?.message ?? e)}`);
+    }
+  };
+
+  const approveWarga = async (m: WargaDirectoryEntry) => {
+    try {
+      await rtService.approveWarga(m.id);
+      await load();
+      toast.success(`${m.fullName} disetujui bergabung`);
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    }
+  };
+
+  const rejectWarga = async (m: WargaDirectoryEntry) => {
+    try {
+      await rtService.rejectWarga(m.id);
+      await load();
+      toast.success(`${m.fullName} ditolak`);
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
     }
   };
 
@@ -167,6 +188,42 @@ export default function DataWargaScreen({ route, navigation }: Props) {
                   ? '#3B82F6'
                   : colors.emerald;
             const editable = isKetua && m.id !== profile.id;
+            const pendingApproval = isKetua && directoryIsPendingApproval(m);
+
+            // Warga baru menunggu persetujuan → kartu khusus dengan tombol Approve/Tolak.
+            if (pendingApproval) {
+              return (
+                <WargaCard key={m.id} style={[styles.pendingCard]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {m.avatarUrl ? (
+                      <Image source={{ uri: m.avatarUrl }} style={styles.avatarImg} />
+                    ) : (
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{m.fullName ? m.fullName[0].toUpperCase() : '?'}</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontWeight: '600', color: colors.textPrimary }}>{m.fullName}</Text>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>{m.phone}</Text>
+                    </View>
+                    <View style={styles.newBadge}>
+                      <Text style={styles.newBadgeText}>BARU DAFTAR</Text>
+                    </View>
+                  </View>
+                  <View style={styles.approveRow}>
+                    <Pressable style={[styles.appBtn, styles.rejectBtn]} onPress={() => rejectWarga(m)}>
+                      <Icon name="close-circle-outline" size={18} color={wargaColors.dangerRed} />
+                      <Text style={styles.rejectText}>Tolak</Text>
+                    </Pressable>
+                    <Pressable style={[styles.appBtn, styles.approveBtn]} onPress={() => approveWarga(m)}>
+                      <Icon name="checkmark-circle" size={18} color="#fff" />
+                      <Text style={styles.approveText}>Setujui</Text>
+                    </Pressable>
+                  </View>
+                </WargaCard>
+              );
+            }
+
             return (
               <WargaCard key={m.id} style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', padding: 14 }}>
                 {m.avatarUrl ? (
@@ -354,6 +411,15 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.emeraldSoft, alignItems: 'center', justifyContent: 'center' },
   avatarImg: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.emeraldSoft },
   avatarText: { color: colors.emerald, fontWeight: '700' },
+  pendingCard: { marginBottom: 10, padding: 14, borderWidth: 1, borderColor: '#FDE68A', backgroundColor: '#FFFBEB' },
+  newBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#FEF3C7' },
+  newBadgeText: { fontSize: 9, fontWeight: '700', color: '#B45309', letterSpacing: 0.3 },
+  approveRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  appBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 42, borderRadius: 10 },
+  rejectBtn: { borderWidth: 1, borderColor: wargaColors.dangerRed },
+  rejectText: { color: wargaColors.dangerRed, fontWeight: '700' },
+  approveBtn: { backgroundColor: wargaColors.primaryGreen },
+  approveText: { color: '#fff', fontWeight: '700' },
   menuBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', paddingTop: 60, paddingRight: 12, alignItems: 'flex-end' },
   menu: { backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 6, minWidth: 220, ...{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 } },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },

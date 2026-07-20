@@ -32,6 +32,7 @@ export default function SuratDraftScreen({ route }: Props) {
     gender: request.gender,
     religion: request.religion,
     maritalStatus: request.maritalStatus,
+    address: request.submitterAddress,
   };
 
   // Tanda tangan hanya muncul bila surat sudah DISETUJUI.

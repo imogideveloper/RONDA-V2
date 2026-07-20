@@ -53,6 +53,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
   const [pendingSurat, setPendingSurat] = useState<SuratRequest[]>([]);
   const [jiwaExtra, setJiwaExtra] = useState(0);
   const [unread, setUnread] = useState(0);
+  const [pendingWarga, setPendingWarga] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const isKetua = profileIsKetua(profile);
 
@@ -84,6 +85,7 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
       setPendingSurat(pend);
     }
     setUnread(await announcementReadService.unreadCount(rt.id, ann));
+    setPendingWarga(await rtService.countPendingWarga(rt.id).catch(() => 0));
     setRefreshing(false);
   }, [rt.id, isKetua]);
 
@@ -111,8 +113,8 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
           fullName={isKetua ? honorificName(profile.fullName) : profile.fullName}
           roleRtLine={`${isKetua ? 'Ketua RT' : 'Bendahara'} • ${rtDisplayLabel(rt)}`}
           avatarUrl={profile.avatarUrl}
-          notifCount={unread}
-          onNotifTap={() => onNavigateTab(3)}
+          notifCount={pendingWarga}
+          onNotifTap={() => navigation.navigate('DataWarga', { profile, rt })}
         />
         <View style={{ height: 16 }} />
 

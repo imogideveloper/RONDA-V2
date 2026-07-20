@@ -24,8 +24,9 @@ import { confirmDialog } from '../../lib/dialog';
 import * as DocumentPicker from 'expo-document-picker';
 import { ocrKk } from '../../lib/kkOcr';
 import { extractPdfLines } from '../../lib/pdfText';
-import { parseKkMembers } from '../../lib/kkParser';
+import { parseKkMembers, parseKkAddress } from '../../lib/kkParser';
 import { familyService, FamilyMemberInput } from '../../services/familyService';
+import { rtService } from '../../services/rtService';
 import { FamilyMember } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -42,10 +43,15 @@ export default function FamilyMembersScreen({ route }: Props) {
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrMsg, setOcrMsg] = useState('');
   const [drafts, setDrafts] = useState<FamilyMemberInput[] | null>(null);
+  const [headAddress, setHeadAddress] = useState('');
 
   const load = useCallback(async () => {
     try {
       setList(await familyService.listForHead(headId));
+      // Tampilkan alamat kepala keluarga yang tersimpan (dari KK sebelumnya), bila ada.
+      const members = await rtService.getRtMembers().catch(() => []);
+      const head = members.find((m) => m.id === headId);
+      if (head?.address) setHeadAddress(head.address);
     } catch (e: any) {
       toast.error(String(e?.message ?? e));
     } finally {
@@ -80,9 +86,21 @@ export default function FamilyMembersScreen({ route }: Props) {
         setOcrMsg('Memuat OCR…');
         text = await ocrKk(asset.uri, isPdf, (p) => setOcrMsg(`Membaca KK… ${Math.round(p * 100)}%`));
       }
+      // Alamat dari header KK -> simpan ke profil kepala keluarga (best-effort).
+      const address = parseKkAddress(text);
+      if (address) {
+        try {
+          await familyService.setMemberAddress(headId, address);
+          setHeadAddress(address);
+          toast.success(`Alamat KK tersimpan: ${address}`);
+        } catch {
+          // abaikan bila gagal simpan alamat
+        }
+      }
+
       const members = parseKkMembers(text);
       if (members.length === 0) {
-        toast.error('Tidak terdeteksi anggota dari KK. Coba foto lebih jelas, atau input manual.');
+        if (!address) toast.error('Tidak terdeteksi data dari KK. Coba foto lebih jelas, atau input manual.');
         return;
       }
       setDrafts(members);
@@ -123,6 +141,12 @@ export default function FamilyMembersScreen({ route }: Props) {
       <View style={styles.headBox}>
         <Text style={styles.headLabel}>KEPALA KELUARGA</Text>
         <Text style={styles.headName}>{headName}</Text>
+        {headAddress !== '' && (
+          <View style={styles.headAddrRow}>
+            <Icon name="home-outline" size={13} color={colors.textSecondary} />
+            <Text style={styles.headAddr}>{headAddress}</Text>
+          </View>
+        )}
       </View>
 
       {loading ? (
@@ -396,6 +420,8 @@ const styles = StyleSheet.create({
   headBox: { paddingHorizontal: 20, paddingBottom: 8 },
   headLabel: { fontSize: 10, fontWeight: '700', color: colors.textHint, letterSpacing: 0.4 },
   headName: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginTop: 2 },
+  headAddrRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 6 },
+  headAddr: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   empty: { color: colors.textSecondary, textAlign: 'center', paddingVertical: 32 },
   card: {
     flexDirection: 'row',

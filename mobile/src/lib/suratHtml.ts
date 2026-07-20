@@ -45,7 +45,8 @@ export function buildSuratHtml(data: SuratLetterData, opts?: { showSignature?: b
     (data.birthPlace && data.birthPlace.trim() !== '') || (data.birthDate && data.birthDate.trim() !== '')
       ? `${esc(data.birthPlace?.trim() || '-')}, ${esc(data.birthDate?.trim() || '-')}`
       : BLANK;
-  const alamat = esc(rt.address ?? '-');
+  const alamat = esc(rt.address ?? '-'); // untuk kop RT
+  const dataAlamat = esc((data.address && data.address.trim() !== '' ? data.address : rt.address) ?? '-'); // alamat warga
   const kotaLoc = [rt.kelurahan, rt.kecamatan, rt.kota]
     .filter((x): x is string => !!x && x.trim() !== '')
     .map(esc)
@@ -87,7 +88,7 @@ export function buildSuratHtml(data: SuratLetterData, opts?: { showSignature?: b
       ${row('Agama', orBlank(data.religion))}
       ${row('Status', orBlank(data.maritalStatus))}
       ${row('Pekerjaan', orBlank(data.occupation))}
-      ${row('Alamat', alamat)}
+      ${row('Alamat', dataAlamat)}
     </table>
     ${draft.isi.map((p) => `<p>${boldKeperluan(esc(p), esc(draft.keperluan))}</p>`).join('')}
     <p>${esc(draft.penutup)}</p>

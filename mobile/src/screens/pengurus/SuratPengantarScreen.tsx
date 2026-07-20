@@ -190,7 +190,7 @@ export default function SuratPengantarScreen({ route, navigation }: Props) {
                       <DataCell label="Pekerjaan" value={detail.submitterOccupation} />
                       <DataCell label="Status" value={detail.submitterMaritalStatus} />
                     </View>
-                    <DataCell label="Alamat" value={rt.address} full />
+                    <DataCell label="Alamat" value={detail.submitterAddress ?? rt.address} full />
                   </View>
 
                   <View style={styles.sectionRow}>

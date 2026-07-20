@@ -102,6 +102,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
     gender: r.gender,
     religion: r.religion,
     maritalStatus: r.maritalStatus,
+    address: r.submitterAddress ?? profile.address,
   });
 
   const downloadPdf = async (r: SuratRequest) => {
@@ -415,7 +416,7 @@ export default function WargaLayananSuratScreen({ route }: Props) {
                     <DataCell label="Status Pernikahan" value={detailReq.maritalStatus} />
                     <DataCell label="Pekerjaan" value={detailReq.occupation} />
                   </View>
-                  <DataCell label="Alamat" value={rt.address} full />
+                  <DataCell label="Alamat" value={detailReq.submitterAddress ?? profile.address ?? rt.address} full />
                 </View>
 
                 {/* Keperluan */}

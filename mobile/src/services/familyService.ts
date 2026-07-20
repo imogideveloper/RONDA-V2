@@ -98,4 +98,13 @@ export const familyService = {
     const { error } = await supabase.from('family_members').delete().eq('id', id);
     if (error) throw error;
   },
+
+  /** Ketua/Bendahara menyetel alamat rumah seorang warga (mis. dari hasil scan KK). */
+  async setMemberAddress(memberId: string, address: string): Promise<void> {
+    const { error } = await supabase.rpc('ketua_update_member_address', {
+      p_member_id: memberId,
+      p_address: address,
+    });
+    if (error) throw error;
+  },
 };

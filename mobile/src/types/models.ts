@@ -29,6 +29,8 @@ export interface Profile {
   gender: string | null;
   religion: string | null;
   maritalStatus: string | null;
+  address: string | null; // alamat rumah warga (dari KK) — migrasi 022
+  approvalStatus: string; // 'pending' | 'approved' | 'rejected' — migrasi 023
 }
 
 export function profileFromMap(map: Row): Profile {
@@ -49,10 +51,13 @@ export function profileFromMap(map: Row): Profile {
     gender: (map.gender as string) ?? null,
     religion: (map.religion as string) ?? null,
     maritalStatus: (map.marital_status as string) ?? null,
+    address: (map.address as string) ?? null,
+    approvalStatus: (map.approval_status as string) ?? 'approved',
   };
 }
 
 export const profileRole = (p: Profile): UserRole => roleFromString(p.role);
+export const profileIsPending = (p: Profile): boolean => p.approvalStatus === 'pending';
 export const profileHasRt = (p: Profile): boolean => p.rtId != null;
 export const profileIsWarga = (p: Profile): boolean => profileRole(p) === 'warga';
 export const profileIsKetua = (p: Profile): boolean => profileRole(p) === 'ketuaRt';
@@ -278,6 +283,7 @@ export interface SuratRequest {
   submitterNik: string | null;
   submitterOccupation: string | null;
   submitterMaritalStatus: string | null;
+  submitterAddress: string | null;
   // Nama pemohon bila surat untuk anggota keluarga (null = pakai nama akun) — migrasi 021
   applicantName: string | null;
   // Data subjek surat (diisi warga saat mengajukan; anggota keluarga bila dipilih) — migrasi 015 & 017
@@ -303,6 +309,7 @@ export function suratRequestFromMap(map: Row): SuratRequest {
     submitterNik: profiles && typeof profiles === 'object' ? (profiles.nik ?? null) : null,
     submitterOccupation: profiles && typeof profiles === 'object' ? (profiles.occupation ?? null) : null,
     submitterMaritalStatus: profiles && typeof profiles === 'object' ? (profiles.marital_status ?? null) : null,
+    submitterAddress: profiles && typeof profiles === 'object' ? (profiles.address ?? null) : null,
     applicantName: (map.applicant_name as string) ?? null,
     nik: (map.nik as string) ?? null,
     birthPlace: (map.birth_place as string) ?? null,

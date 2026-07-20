@@ -39,6 +39,35 @@ function detectOccupation(u: string): string {
 const NIK_RE = /\b\d{16}\b/;
 const DATE_RE = /\b\d{2}-\d{2}-\d{4}\b/;
 
+// Ambil alamat dari header KK (Alamat, RT/RW, Kelurahan, Kecamatan, Kota, Kode Pos).
+// Best-effort: KK berupa teks digital lebih akurat daripada hasil foto/scan.
+export function parseKkAddress(text: string): string {
+  const t = text.replace(/\s+/g, ' ');
+  const grab = (re: RegExp): string => {
+    const m = t.match(re);
+    return m ? m[1].replace(/\s+/g, ' ').trim() : '';
+  };
+
+  const alamat = grab(/ALAMAT\s*:?\s*(.+?)(?:\s*(?:RT\s*\/?\s*RW|KODE\s*POS|DESA|KELURAHAN|KECAMATAN)\b|$)/i);
+  const rtrwM = t.match(/RT\s*\/?\s*RW\s*:?\s*(\d{1,3})\s*\/\s*(\d{1,3})/i);
+  const rt = rtrwM ? rtrwM[1].replace(/^0+/, '') || rtrwM[1] : '';
+  const rw = rtrwM ? rtrwM[2].replace(/^0+/, '') || rtrwM[2] : '';
+  const kel = grab(/(?:DESA\s*\/?\s*KELURAHAN|KELURAHAN|DESA)\s*:?\s*([A-Za-z' .]+?)(?:\s*(?:KECAMATAN|KABUPATEN|KOTA|KODE|PROVINSI)\b|$)/i);
+  const kec = grab(/KECAMATAN\s*:?\s*([A-Za-z' .]+?)(?:\s*(?:KABUPATEN|KOTA|KODE|PROVINSI|PROP)\b|$)/i);
+  const kota = grab(/(?:KABUPATEN\s*\/?\s*KOTA|KABUPATEN|KOTA)\s*:?\s*([A-Za-z' .]+?)(?:\s*(?:KODE|PROVINSI|PROP|PROVINSI)\b|$)/i);
+  const kodepos = grab(/KODE\s*POS\s*:?\s*(\d{5})/i);
+
+  const parts: string[] = [];
+  if (alamat) parts.push(titleCase(alamat));
+  if (rt && rw) parts.push(`RT ${rt.padStart(2, '0')}/RW ${rw.padStart(2, '0')}`);
+  if (kel) parts.push(`Kel. ${titleCase(kel)}`);
+  if (kec) parts.push(`Kec. ${titleCase(kec)}`);
+  if (kota) parts.push(`${titleCase(kota)}${kodepos ? ` ${kodepos}` : ''}`);
+  else if (kodepos) parts.push(kodepos);
+
+  return parts.join(', ');
+}
+
 export function parseKkMembers(text: string): FamilyMemberInput[] {
   const lines = text
     .split(/\r?\n/)
