@@ -145,16 +145,19 @@ export default function CreateAnnouncementScreen({ route, navigation }: Props) {
       if (empty) return toast.error(`Lengkapi: ${f.label}`);
     }
     if (hari.trim() === '') return toast.error('Hari wajib diisi');
-    if (tanggal.trim() === '') return toast.error('Tanggal wajib diisi');
+    if (tanggal.trim() === '') return toast.error('Tanggal kegiatan wajib diisi');
     if (jam.trim() === '') return toast.error('Jam wajib diisi');
     if (lokasi.trim() === '') return toast.error('Lokasi wajib diisi');
+
+    // Tanggal kegiatan WAJIB valid → eventDate tak boleh null, agar pengumuman
+    // otomatis pindah ke arsip/Riwayat setelah tanggalnya lewat.
+    const iso = indoToISO(tanggal.trim());
+    const parsed = new Date(iso ? `${iso}T00:00:00` : tanggal.trim());
+    if (isNaN(parsed.getTime())) return toast.error('Tanggal kegiatan tidak valid');
+    const parsedDate: Date = parsed;
+
     setSaving(true);
     try {
-      let parsedDate: Date | null = null;
-      const iso = indoToISO(tanggal.trim());
-      const d = new Date(iso ? `${iso}T00:00:00` : tanggal.trim());
-      if (!isNaN(d.getTime())) parsedDate = d;
-
       // Susun: Pembukaan -> Isi (narasi) -> Jadwal -> Penutup.
       // Jadwal disisipkan SEBELUM paragraf terakhir (penutup), setelah isi utama.
       const jadwal =
