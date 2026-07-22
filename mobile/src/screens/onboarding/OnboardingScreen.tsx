@@ -31,6 +31,14 @@ export function OnboardingScreen({ profile, onDone, onLogout }: Props) {
         </View>
         <Text style={styles.hello}>Halo, {profile.fullName.split(' ')[0]}!</Text>
         <Text style={styles.sub}>Pilih cara bergabung dengan RT Anda</Text>
+
+        {profile.approvalStatus === 'rejected' && (
+          <View style={styles.rejectedBanner}>
+            <Icon name="close-circle-outline" size={20} color={colors.danger} />
+            <Text style={styles.rejectedText}>Pendaftaran ditolak — silakan coba mendaftar lagi.</Text>
+          </View>
+        )}
+
         <View style={{ height: 32 }} />
 
         <OptionCard
@@ -110,6 +118,8 @@ const styles = StyleSheet.create({
   optionTitle: { fontWeight: '700', fontSize: 16, color: colors.textPrimary },
   optionDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   infoText: { fontSize: 13, color: colors.emeraldDark, lineHeight: 20 },
+  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
+  rejectedText: { flex: 1, fontSize: 13, color: colors.danger, fontWeight: '600', lineHeight: 18 },
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.danger },
   logoutText: { color: colors.danger, fontWeight: '600', fontSize: 15 },
 });

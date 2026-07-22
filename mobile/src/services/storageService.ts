@@ -6,6 +6,7 @@ const ANNOUNCEMENT_BUCKET = 'announcement-images';
 const PROFILE_AVATAR_BUCKET = 'profile-avatars';
 const IURAN_PROOF_BUCKET = 'iuran-payment-proofs';
 const RT_ASSETS_BUCKET = 'rt-assets';
+const KK_DOC_BUCKET = 'kk-docs';
 
 export type RtAssetKind = 'kop' | 'signature' | 'qris';
 
@@ -73,6 +74,22 @@ export const storageService = {
       .upload(path, buffer, { contentType: contentTypeOf(ext), upsert: true });
     if (error) throw error;
     return supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(path).data.publicUrl;
+  },
+
+  // Dokumen Kartu Keluarga (PDF/gambar) yang diunggah warga saat daftar.
+  async uploadKkDoc(userId: string, file: PickedImage): Promise<string> {
+    const nameLower = (file.fileName ?? file.uri).toLowerCase();
+    const isPdf = (file.mimeType ?? '').includes('pdf') || nameLower.endsWith('.pdf');
+    const ext = isPdf ? 'pdf' : extensionOf(file.fileName ?? file.uri);
+    const ct = isPdf ? 'application/pdf' : contentTypeOf(ext);
+    const path = `${userId}/kk.${ext}`;
+    const buffer = await toArrayBuffer(file.uri);
+    const { error } = await supabase.storage
+      .from(KK_DOC_BUCKET)
+      .upload(path, buffer, { contentType: ct, upsert: true });
+    if (error) throw error;
+    const base = supabase.storage.from(KK_DOC_BUCKET).getPublicUrl(path).data.publicUrl;
+    return `${base}?t=${Date.now()}`;
   },
 
   async uploadIuranPaymentProof(rtId: string, userId: string, file: PickedImage): Promise<string> {

@@ -61,7 +61,7 @@ async function inlineImages(html: string): Promise<string> {
 
 // Unduh langsung sebagai file PDF di web (tanpa dialog cetak).
 // Render HTML penuh di dalam IFRAME (styling pasti benar), lalu capture via html2canvas + jsPDF.
-async function downloadPdfWeb(html: string, filename: string): Promise<void> {
+async function downloadPdfWeb(html: string, filename: string, multipage = false): Promise<void> {
   const w = globalThis as any;
   const doc = w.document;
   const [html2canvas, JsPDF] = await Promise.all([loadHtml2Canvas(), loadJsPDF()]);
@@ -128,11 +128,39 @@ async function downloadPdfWeb(html: string, filename: string): Promise<void> {
       windowWidth: 794,
       width: 794,
     });
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
     const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const pageW = 210;
     const pageH = 297;
     const marginX = 10; // napas kiri-kanan (mm)
+
+    if (multipage) {
+      // Dokumen panjang (laporan): potong kanvas per tinggi A4, jadi banyak halaman.
+      const margin = 8;
+      const imgW = pageW - margin * 2;
+      const pxPerMm = canvas.width / imgW;
+      const sliceHpx = Math.floor((pageH - margin * 2) * pxPerMm);
+      let y = 0;
+      let first = true;
+      while (y < canvas.height) {
+        const h = Math.min(sliceHpx, canvas.height - y);
+        const pageCanvas = doc.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = h;
+        const ctx = pageCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, h);
+        ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        const pageImg = pageCanvas.toDataURL('image/jpeg', 0.96);
+        if (!first) pdf.addPage();
+        pdf.addImage(pageImg, 'JPEG', margin, margin, imgW, h / pxPerMm);
+        first = false;
+        y += h;
+      }
+      pdf.save(safe);
+      return;
+    }
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
     // Muat SELURUH surat dalam SATU halaman A4 (contain), diberi margin & dipusatkan.
     let renderW = pageW - marginX * 2;
     let renderH = (canvas.height * renderW) / canvas.width;
@@ -212,6 +240,26 @@ export async function exportHtmlAsPdf(
       await downloadPdfWeb(html, filename);
     } catch {
       // Gagal (mis. tanpa internet / CDN diblok) → pakai dialog cetak browser.
+      await printHtmlWeb(html);
+    }
+    return;
+  }
+  const { uri } = await Print.printToFileAsync({ html });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle });
+  }
+}
+
+/** Seperti exportHtmlAsPdf tapi untuk dokumen PANJANG (multi-halaman A4). */
+export async function exportLongHtmlAsPdf(
+  html: string,
+  dialogTitle = 'Simpan / Bagikan',
+  filename = 'dokumen.pdf',
+): Promise<void> {
+  if (Platform.OS === 'web') {
+    try {
+      await downloadPdfWeb(html, filename, true);
+    } catch {
       await printHtmlWeb(html);
     }
     return;

@@ -15,6 +15,7 @@ export interface WargaDirectoryEntry {
   isKetua: boolean;
   avatarUrl: string | null;
   approvalStatus: string; // 'pending' | 'approved' | 'rejected' (akun) — migrasi 023
+  kkUrl: string | null; // PDF Kartu Keluarga — migrasi 024
 }
 
 export function directoryFromProfile(p: Profile): WargaDirectoryEntry {
@@ -29,6 +30,7 @@ export function directoryFromProfile(p: Profile): WargaDirectoryEntry {
     isKetua: profileIsKetua(p),
     avatarUrl: p.avatarUrl ?? null,
     approvalStatus: p.approvalStatus,
+    kkUrl: p.kkUrl ?? null,
   };
 }
 
@@ -44,6 +46,7 @@ export function directoryFromRegistry(map: Row): WargaDirectoryEntry {
     isKetua: false,
     avatarUrl: null,
     approvalStatus: 'approved',
+    kkUrl: null,
   };
 }
 

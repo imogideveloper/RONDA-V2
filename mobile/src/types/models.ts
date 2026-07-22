@@ -31,6 +31,7 @@ export interface Profile {
   maritalStatus: string | null;
   address: string | null; // alamat rumah warga (dari KK) — migrasi 022
   approvalStatus: string; // 'pending' | 'approved' | 'rejected' — migrasi 023
+  kkUrl: string | null; // URL PDF Kartu Keluarga — migrasi 024
 }
 
 export function profileFromMap(map: Row): Profile {
@@ -53,6 +54,7 @@ export function profileFromMap(map: Row): Profile {
     maritalStatus: (map.marital_status as string) ?? null,
     address: (map.address as string) ?? null,
     approvalStatus: (map.approval_status as string) ?? 'approved',
+    kkUrl: (map.kk_url as string) ?? null,
   };
 }
 
@@ -92,6 +94,11 @@ export interface RtUnit {
   kota: string | null;
   iuranAmount: number;
   iuranComponents: IuranComponent[];
+  // Kontak darurat (diisi Ketua RT) — migrasi 026
+  emergencyKetuaPhone: string | null;
+  emergencyBendaharaPhone: string | null;
+  emergencySecurityName: string | null;
+  emergencySecurityPhone: string | null;
 }
 
 export function rtUnitFromMap(map: Row): RtUnit {
@@ -120,6 +127,10 @@ export function rtUnitFromMap(map: Row): RtUnit {
           .map((c) => ({ name: String(c?.name ?? ''), amount: Number(c?.amount ?? 0) }))
           .filter((c) => c.name !== '')
       : [],
+    emergencyKetuaPhone: (map.emergency_ketua_phone as string) ?? null,
+    emergencyBendaharaPhone: (map.emergency_bendahara_phone as string) ?? null,
+    emergencySecurityName: (map.emergency_security_name as string) ?? null,
+    emergencySecurityPhone: (map.emergency_security_phone as string) ?? null,
   };
 }
 

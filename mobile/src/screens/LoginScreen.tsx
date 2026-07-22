@@ -1,6 +1,7 @@
 // Port dari lib/pages/auth/login_otp_page.dart
 import React, { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,7 +18,11 @@ import { Card, PrimaryButton } from '../components/Card';
 import { Field } from '../components/Field';
 import { useToast } from '../components/Toast';
 import { authService } from '../services/authService';
+import { storageService, PickedImage } from '../services/storageService';
+import { extractPdfLines } from '../lib/pdfText';
+import { parseKkHead, parseKkAddress } from '../lib/kkParser';
 import { displayPhone, mapAuthError, normalizePhone, digitsOnly } from '../lib/phone';
+import * as DocumentPicker from 'expo-document-picker';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
@@ -41,6 +46,55 @@ export default function LoginScreen({ navigation }: Props) {
   const [obscureConfirm, setObscureConfirm] = useState(true);
   const [isRegisterMode, setRegisterMode] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Kartu Keluarga (wajib saat daftar) — auto-isi nama/alamat/NIK.
+  const [kkFile, setKkFile] = useState<PickedImage | null>(null);
+  const [kkAddress, setKkAddress] = useState('');
+  const [kkNik, setKkNik] = useState('');
+  const [kkBusy, setKkBusy] = useState(false);
+  const [photoFile, setPhotoFile] = useState<PickedImage | null>(null);
+
+  const pickPhoto = async () => {
+    try {
+      const p = await storageService.pickImageFromGallery();
+      if (p) setPhotoFile(p);
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    }
+  };
+
+  const pickKk = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'] });
+      if (result.canceled || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      const isPdf = (asset.mimeType ?? '').includes('pdf') || (asset.name ?? '').toLowerCase().endsWith('.pdf');
+      setKkBusy(true);
+      let text = '';
+      if (isPdf) {
+        try {
+          text = await extractPdfLines(asset.uri);
+        } catch {
+          text = '';
+        }
+      }
+      const head = parseKkHead(text);
+      const addr = parseKkAddress(text);
+      setKkFile({ uri: asset.uri, mimeType: asset.mimeType, fileName: asset.name });
+      if (head.name) setName(head.name);
+      if (head.nik) setKkNik(head.nik);
+      if (addr) setKkAddress(addr);
+      if (!head.name && !addr) {
+        toast.success('KK terlampir. Data tak terbaca otomatis — isi Nama manual (pastikan PDF teks digital).');
+      } else {
+        toast.success('KK terbaca. Nama & alamat terisi otomatis.');
+      }
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    } finally {
+      setKkBusy(false);
+    }
+  };
 
   const goHome = () => navigation.replace('Home');
 
@@ -103,6 +157,8 @@ export default function LoginScreen({ navigation }: Props) {
   }
 
   async function registerEmail() {
+    if (kkFile == null) return toast.error('Upload Kartu Keluarga (PDF) dulu untuk mendaftar');
+    if (photoFile == null) return toast.error('Upload foto profil dulu untuk mendaftar');
     if (name.trim().length < 2) return toast.error('Nama lengkap wajib diisi');
     if (email.trim() === '' || !email.includes('@')) return toast.error('Email tidak valid');
     if (registerPhone.length < 9) return toast.error('Nomor HP wajib (min. 9 digit)');
@@ -113,9 +169,21 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       const needsConfirm = await authService.registerWithEmail(email, password, name, registerPhone);
       if (needsConfirm) {
-        toast.success('Daftar berhasil! Cek email untuk konfirmasi, lalu masuk.');
+        toast.success('Daftar berhasil! Cek email untuk konfirmasi, lalu masuk & upload KK.');
         setRegisterMode(false);
         return;
+      }
+      // Sudah ada sesi → upload KK + simpan data (nama sudah lewat signup).
+      try {
+        const uid = (await authService.currentUser())?.id;
+        if (uid) {
+          const kkUrl = await storageService.uploadKkDoc(uid, kkFile);
+          let avatarUrl: string | undefined;
+          if (photoFile) avatarUrl = await storageService.uploadProfileAvatar(uid, photoFile);
+          await authService.saveMyKkData({ kkUrl, address: kkAddress, nik: kkNik, avatarUrl });
+        }
+      } catch (up: any) {
+        toast.error('Akun dibuat, tapi upload KK gagal. Bisa diulang dari Profil.');
       }
       toast.success('Selamat datang! Anda terdaftar sebagai Warga RT.');
       goHome();
@@ -228,6 +296,35 @@ export default function LoginScreen({ navigation }: Props) {
               Daftar akun baru — otomatis menjadi Warga RT
             </Text>
           </View>
+          <Pressable onPress={kkBusy ? undefined : pickKk} style={[styles.kkBox, kkFile != null && styles.kkBoxDone]}>
+            <Icon name={kkFile != null ? 'checkmark-circle' : 'cloud-upload-outline'} size={24} color={kkFile != null ? colors.emerald : '#2563EB'} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.kkTitle}>
+                {kkBusy ? 'Membaca KK…' : kkFile != null ? 'Kartu Keluarga terlampir' : 'Upload Kartu Keluarga (PDF) *'}
+              </Text>
+              <Text style={styles.kkSub}>
+                {kkFile != null ? (kkFile.fileName ?? 'kk.pdf') + ' — ketuk untuk ganti' : 'Wajib. Nama & alamat terisi otomatis dari KK.'}
+              </Text>
+            </View>
+          </Pressable>
+          {kkAddress !== '' && (
+            <Text style={styles.kkAddr}>📍 {kkAddress}</Text>
+          )}
+          <View style={styles.photoRow}>
+            <Pressable onPress={pickPhoto} style={styles.photoPick}>
+              {photoFile != null ? (
+                <Image source={{ uri: photoFile.uri }} style={styles.photoImg} />
+              ) : (
+                <Icon name="camera-outline" size={26} color={colors.emerald} />
+              )}
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.kkTitle}>Foto profil {photoFile != null ? '' : '*'}</Text>
+              <Text style={styles.kkSub}>
+                {photoFile != null ? 'Foto terpilih — ketuk untuk ganti.' : 'Wajib. Ketuk lingkaran untuk pilih foto. Muncul di profil Anda.'}
+              </Text>
+            </View>
+          </View>
           <Field label="Nama lengkap" leftIcon="person-outline" placeholder="Contoh: Budi Santoso" autoCapitalize="words" value={name} onChangeText={setName} />
           <Field label="Nomor HP" hint="Tanpa +62 — cukup 08xxxxxxxxxx" leftIcon="phone-portrait-outline" prefixText="+62 " keyboardType="number-pad" placeholder="83845509841" value={registerPhone} onChangeText={(t) => setRegisterPhone(digitsOnly(t))} />
           <Field label="Email" leftIcon="mail-outline" keyboardType="email-address" autoCapitalize="none" placeholder="nama@email.com" value={email} onChangeText={setEmail} />
@@ -296,6 +393,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   registerBannerText: { flex: 1, fontSize: 13, color: colors.emeraldDark, fontWeight: '600' },
+  kkBox: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: radius.md, borderWidth: 1.5, borderColor: '#BAE6FD', backgroundColor: '#F0F9FF' },
+  kkBoxDone: { borderColor: colors.emerald, backgroundColor: colors.emeraldSoft },
+  kkTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  kkSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  kkAddr: { fontSize: 12, color: colors.textSecondary, marginTop: -4 },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  photoPick: { width: 64, height: 64, borderRadius: 32, borderWidth: 1.5, borderColor: colors.emeraldSoft, backgroundColor: colors.emeraldSoft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  photoImg: { width: 64, height: 64, borderRadius: 32 },
   infoCard: { marginTop: 24 },
   infoText: { flex: 1, fontSize: 12, color: colors.emeraldDark, lineHeight: 18 },
 });

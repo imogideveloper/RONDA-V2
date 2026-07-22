@@ -166,6 +166,19 @@ export function PengurusHomeScreen({ profile, rt, onNavigateTab }: Props) {
           <QuickTile icon="call" color="#DC2626" label="Layanan" onPress={() => navigation.navigate('WargaLayanan', { profile, rt })} />
         </View>
 
+        {menungguVerifikasi > 0 && (
+          <Pressable style={styles.verifBanner} onPress={() => onNavigateTab(1, 'verifikasi')}>
+            <View style={styles.verifIcon}>
+              <Icon name="time-outline" size={20} color="#B45309" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.verifTitle}>{menungguVerifikasi} pembayaran menunggu verifikasi</Text>
+              <Text style={styles.verifSub}>Ketuk untuk memeriksa & menyetujui bukti bayar warga.</Text>
+            </View>
+            <Icon name="chevron-forward" size={18} color="#B45309" />
+          </Pressable>
+        )}
+
         {/* Statistik Iuran */}
         <View style={{ height: 22 }} />
         <View style={styles.iuranCard}>
@@ -287,6 +300,10 @@ const styles = StyleSheet.create({
   qBadge: { position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: wargaColors.dangerRed, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: wargaColors.bgColor },
   qBadgeText: { fontSize: 9, fontWeight: '700', color: '#fff' },
   qLabel: { fontSize: 10, fontWeight: '600', color: colors.textPrimary, marginTop: 6, textAlign: 'center' },
+  verifBanner: { flexDirection: 'row', alignItems: 'center', marginTop: 16, padding: 14, borderRadius: 14, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  verifIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' },
+  verifTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
+  verifSub: { fontSize: 12, color: '#B45309', marginTop: 2 },
   iuranCard: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 16 },
   iuranHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   iuranTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },

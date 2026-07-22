@@ -100,7 +100,9 @@ export function groupIuranByYearMonth(records: IuranRecord[]): PeriodYearGroup<I
     if (!byYear.has(ym.y)) byYear.set(ym.y, new Map());
     const months = byYear.get(ym.y)!;
     if (!months.has(ym.m)) months.set(ym.m, new Map());
-    months.get(ym.m)!.set(r.periodKey, r);
+    // Key harus unik per record (r.id). Dulu memakai periodKey → semua warga
+    // dalam periode sama saling menimpa, jadi cuma 1 yang tampil.
+    months.get(ym.m)!.set(r.id, r);
   }
   return [...byYear.keys()]
     .sort((a, b) => b - a)
@@ -110,7 +112,7 @@ export function groupIuranByYearMonth(records: IuranRecord[]): PeriodYearGroup<I
         .sort((a, b) => b - a)
         .map((m) => {
           const items = [...monthsMap.get(m)!.values()].sort((a, b) =>
-            b.periodKey.localeCompare(a.periodKey),
+            (a.userName ?? '').localeCompare(b.userName ?? ''),
           );
           return {
             year: y,

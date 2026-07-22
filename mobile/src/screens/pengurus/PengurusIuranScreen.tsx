@@ -2,7 +2,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -29,6 +31,7 @@ import {
   IuranRecord,
   Profile,
   RtUnit,
+  iuranIsAwaiting,
   iuranIsPaid,
   iuranIsUnpaid,
   profileIsBendahara,
@@ -62,6 +65,7 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
   const [jiwa, setJiwa] = useState<Record<string, number>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -126,8 +130,22 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
     }
   };
 
+  const reject = async (bill: IuranRecord) => {
+    setRejectingId(bill.id);
+    try {
+      await rtService.rejectIuranAsOfficer(bill.id);
+      toast.success(`Bukti ${bill.userName ?? 'warga'} ditolak — warga bisa unggah ulang`);
+      await load();
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   const unpaid = bills.filter(iuranIsUnpaid);
   const paid = bills.filter(iuranIsPaid);
+  const awaiting = bills.filter(iuranIsAwaiting);
 
   // ── Mode TAGIH: layout bertingkat Tahun → Bulan → warga ──────────────
   if (mode === 'tagih') {
@@ -339,7 +357,7 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
   const title = mode === 'verifikasi' ? 'Verifikasi Iuran' : 'Iuran RT';
   const infoText = focused
     ? 'Ketuk kartu warga untuk verifikasi pembayaran iuran.'
-    : 'Pantau status pembayaran iuran warga RT. Ketuk ↻ untuk buat tagihan bulan ini.';
+    : 'Pantau status pembayaran iuran warga RT. Ketuk + untuk buat tagihan bulan ini.';
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
@@ -361,7 +379,7 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
             subtitle={rtDisplayLabel(rt)}
             trailing={
               <Pressable onPress={generateMonthly} style={styles.refreshBtn}>
-                <Icon name="refresh" size={22} color={wargaColors.primaryGreen} />
+                <Icon name="add" size={22} color={wargaColors.primaryGreen} />
               </Pressable>
             }
           />
@@ -378,10 +396,10 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
             <>
               <Text style={wargaText.sectionTitle}>Menunggu verifikasi</Text>
               <View style={{ height: 10 }} />
-              {unpaid.length === 0 ? (
-                <WargaEmptyState icon="happy-outline" message="Semua iuran bulan ini sudah lunas." />
+              {awaiting.length === 0 ? (
+                <WargaEmptyState icon="happy-outline" message="Tidak ada pembayaran yang menunggu verifikasi." />
               ) : (
-                unpaid.map((b) => (
+                awaiting.map((b) => (
                   <KetuaExpandableIuranCard
                     key={b.id}
                     bill={b}
@@ -389,8 +407,10 @@ export function PengurusIuranScreen({ rt, mode, onBack }: Props) {
                     rt={rt}
                     expanded={expandedId === b.id}
                     approving={approvingId === b.id}
+                    rejecting={rejectingId === b.id}
                     onToggle={() => setExpandedId((cur) => (cur === b.id ? null : b.id))}
                     onApprove={() => approve(b)}
+                    onReject={() => reject(b)}
                   />
                 ))
               )}
@@ -707,19 +727,25 @@ function KetuaExpandableIuranCard({
   rt,
   expanded,
   approving,
+  rejecting,
   onToggle,
   onApprove,
+  onReject,
 }: {
   bill: IuranRecord;
   warga?: Profile;
   rt: RtUnit;
   expanded: boolean;
   approving: boolean;
+  rejecting?: boolean;
   onToggle: () => void;
   onApprove: () => void;
+  onReject?: () => void;
 }) {
   const phone = warga?.phone ?? '';
   const hasPhone = phone.replace(/\D/g, '').length >= 9;
+  const awaiting = iuranIsAwaiting(bill);
+  const busy = approving || !!rejecting;
 
   const mention = () =>
     openWhatsAppTagihan({
@@ -737,15 +763,72 @@ function KetuaExpandableIuranCard({
           <Text style={[wargaText.sectionTitle, { fontSize: 16 }]}>{iuranCardTitle(bill.userName, bill.periodLabel)}</Text>
           <Text style={[wargaText.greeting, { marginTop: 4 }]}>{formatRupiah(bill.amount)}</Text>
         </View>
-        <StatusChip label={iuranIsPaid(bill) ? 'Lunas' : 'Belum bayar'} color={iuranIsPaid(bill) ? wargaColors.primaryGreen : '#BA7517'} />
+        <StatusChip
+          label={iuranIsPaid(bill) ? 'Lunas' : awaiting ? 'Menunggu' : 'Belum bayar'}
+          color={iuranIsPaid(bill) ? wargaColors.primaryGreen : '#BA7517'}
+        />
         <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} style={{ marginLeft: 4 }} />
       </Pressable>
       {expanded && !iuranIsPaid(bill) && (
         <View style={{ marginTop: 16 }}>
-          <View style={{ marginBottom: 10 }}>
-            <PrimaryButton label={approving ? 'Memproses...' : 'Approve Iuran'} onPress={onApprove} loading={approving} />
-          </View>
-          <Pressable onPress={hasPhone ? mention : undefined} style={[styles.waRow, !hasPhone && { opacity: 0.5 }]}>
+          {/* Preview bukti pembayaran yang diupload warga */}
+          {awaiting && (
+            <View style={{ marginBottom: 14 }}>
+              <Text style={styles.proofLabel}>
+                Bukti Pembayaran{bill.paymentMethod ? ` · ${bill.paymentMethod.toUpperCase()}` : ''}
+              </Text>
+              {bill.paymentProofUrl ? (
+                <Pressable onPress={() => Linking.openURL(bill.paymentProofUrl!)}>
+                  <Image source={{ uri: bill.paymentProofUrl }} style={styles.proofImg} resizeMode="contain" />
+                  <Text style={styles.proofHint}>Ketuk untuk buka gambar penuh</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.proofEmpty}>
+                  <Icon name="image-outline" size={26} color={colors.textHint} />
+                  <Text style={styles.proofEmptyText}>Warga tidak melampirkan bukti.</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {awaiting ? (
+            <View style={styles.verifActions}>
+              <Pressable
+                style={[styles.verifBtn, styles.rejectBtn, busy && { opacity: 0.5 }]}
+                disabled={busy}
+                onPress={onReject}
+              >
+                {rejecting ? (
+                  <ActivityIndicator size="small" color={wargaColors.dangerRed} />
+                ) : (
+                  <>
+                    <Icon name="close-circle-outline" size={18} color={wargaColors.dangerRed} />
+                    <Text style={styles.rejectText}>Tolak</Text>
+                  </>
+                )}
+              </Pressable>
+              <Pressable
+                style={[styles.verifBtn, styles.approveBtn, busy && { opacity: 0.5 }]}
+                disabled={busy}
+                onPress={onApprove}
+              >
+                {approving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="checkmark-circle" size={18} color="#fff" />
+                    <Text style={styles.approveText}>Approve</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          ) : (
+            <View style={{ marginBottom: 10 }}>
+              <PrimaryButton label={approving ? 'Memproses...' : 'Tandai Lunas'} onPress={onApprove} loading={approving} />
+            </View>
+          )}
+
+          <Pressable onPress={hasPhone ? mention : undefined} style={[styles.waRow, { marginTop: 12 }, !hasPhone && { opacity: 0.5 }]}>
             <Icon name="logo-whatsapp" size={20} color="#25D366" />
             <Text style={styles.waRowText}>{hasPhone ? 'Mention tagihan ke No. warga' : 'Nomor warga belum diisi'}</Text>
           </Pressable>
@@ -834,6 +917,17 @@ const styles = StyleSheet.create({
 
   waRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#25D366' },
   waRowText: { color: '#25D366', fontWeight: '600' },
+  proofLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
+  proofImg: { width: '100%', height: 260, borderRadius: 12, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: colors.border },
+  proofHint: { fontSize: 11, color: colors.textHint, textAlign: 'center', marginTop: 6, fontStyle: 'italic' },
+  proofEmpty: { height: 120, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  proofEmptyText: { fontSize: 12, color: colors.textHint, fontStyle: 'italic' },
+  verifActions: { flexDirection: 'row', gap: 10 },
+  verifBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 46, borderRadius: 12 },
+  rejectBtn: { borderWidth: 1, borderColor: wargaColors.dangerRed },
+  rejectText: { color: wargaColors.dangerRed, fontWeight: '700' },
+  approveBtn: { backgroundColor: wargaColors.primaryGreen },
+  approveText: { color: '#fff', fontWeight: '700' },
 
   // Buat Tagihan modal
   mBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },

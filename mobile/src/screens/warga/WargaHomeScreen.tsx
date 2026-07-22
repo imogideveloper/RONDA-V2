@@ -123,7 +123,7 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
           fullName={profile.fullName}
           roleRtLine={`Warga · ${rtDisplayLabel(rt)}`}
           avatarUrl={profile.avatarUrl}
-          notifCount={data.announcements.filter((a) => a.isPinned).length}
+          notifCount={data.announcements.filter(announcementActive).length}
           onNotifTap={() => onNavigateTab(2)}
         />
 
@@ -133,6 +133,8 @@ export function WargaHomeScreen({ profile, rt, onNavigateTab, onRtSwitched }: Pr
           total={totalTagihan(data)}
           bulanTertunggak={bulanTertunggak(data)}
           daysLate={daysLate > 0 ? daysLate : null}
+          awaitingTotal={awaiting.reduce((s, b) => s + b.amount, 0)}
+          awaitingCount={awaiting.length}
           onTap={openBayarIuran}
         />
 

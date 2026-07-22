@@ -48,6 +48,34 @@ export async function extractPdfText(uri: string): Promise<string> {
   return out.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Render semua halaman PDF jadi gambar PNG (data URL) memakai pdf.js.
+ * Dipakai untuk PREVIEW dokumen di dalam app, menghindari iframe/blob yang
+ * diblokir Chrome. Hanya web.
+ */
+export async function renderPdfToImages(uri: string, maxPages = 3): Promise<string[]> {
+  if (Platform.OS !== 'web') {
+    throw new Error('Preview PDF baru tersedia di web.');
+  }
+  const lib = await loadPdfJsWeb();
+  const buf = await (await fetch(uri)).arrayBuffer();
+  const pdf = await lib.getDocument({ data: buf }).promise;
+  const doc = (globalThis as any).document;
+  const out: string[] = [];
+  const total = Math.min(pdf.numPages, maxPages);
+  for (let p = 1; p <= total; p++) {
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = doc.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    out.push(canvas.toDataURL('image/png'));
+  }
+  return out;
+}
+
 /** Ekstrak teks PDF dengan MEMPERTAHANKAN baris (item dikelompokkan per posisi-y). */
 export async function extractPdfLines(uri: string): Promise<string> {
   if (Platform.OS !== 'web') {

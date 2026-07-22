@@ -54,27 +54,43 @@ export function WargaTotalTagihanCard({
   total,
   bulanTertunggak,
   daysLate,
+  awaitingTotal = 0,
+  awaitingCount = 0,
   onTap,
 }: {
   total: number;
   bulanTertunggak: number;
   daysLate?: number | null;
+  awaitingTotal?: number;
+  awaitingCount?: number;
   onTap?: () => void;
 }) {
-  const lunas = total <= 0;
+  // 3 status: ada tunggakan → merah; belum ada tunggakan tapi masih diverifikasi
+  // Bendahara → oranye "Menunggu verifikasi"; benar-benar lunas → hijau.
+  const hasDue = total > 0;
+  const waiting = !hasDue && awaitingCount > 0;
+  const cardStyle = hasDue ? styles.tagihanCardDue : waiting ? styles.tagihanCardWait : null;
+  const labelStyle = hasDue ? styles.tagihanLabelDue : waiting ? styles.tagihanLabelWait : null;
+  const subStyle = hasDue ? styles.tagihanSubDue : waiting ? styles.tagihanSubWait : null;
+  const amount = hasDue ? formatRupiah(total) : waiting ? formatRupiah(awaitingTotal) : 'Lunas 🎉';
+  const sub = hasDue
+    ? `${bulanTertunggak} bulan belum lunas${daysLate ? ` · telat ${daysLate} hari` : ''}`
+    : waiting
+      ? `${awaitingCount} tagihan menunggu verifikasi Bendahara`
+      : 'Tidak ada tunggakan';
+  const icon: IconName = hasDue ? 'alert-circle' : waiting ? 'time-outline' : 'checkmark-done';
   return (
-    <Pressable onPress={onTap} style={({ pressed }) => [styles.tagihanCard, pressed && { opacity: 0.9 }]}>
+    <Pressable
+      onPress={onTap}
+      style={({ pressed }) => [styles.tagihanCard, cardStyle, pressed && { opacity: 0.9 }]}
+    >
       <View style={{ flex: 1 }}>
-        <Text style={styles.tagihanLabel}>Total tagihan iuran</Text>
-        <Text style={styles.tagihanAmount}>{lunas ? 'Lunas 🎉' : formatRupiah(total)}</Text>
-        <Text style={styles.tagihanSub}>
-          {lunas
-            ? 'Tidak ada tunggakan'
-            : `${bulanTertunggak} bulan belum lunas${daysLate ? ` · telat ${daysLate} hari` : ''}`}
-        </Text>
+        <Text style={[styles.tagihanLabel, labelStyle]}>Total tagihan iuran</Text>
+        <Text style={styles.tagihanAmount}>{amount}</Text>
+        <Text style={[styles.tagihanSub, subStyle]}>{sub}</Text>
       </View>
       <View style={styles.tagihanIcon}>
-        <Icon name={lunas ? 'checkmark-done' : 'wallet'} size={26} color="#fff" />
+        <Icon name={icon} size={26} color="#fff" />
       </View>
     </Pressable>
   );
@@ -380,9 +396,15 @@ const styles = StyleSheet.create({
     padding: 18,
     ...softShadow,
   },
+  tagihanCardDue: { backgroundColor: '#DC2626' },
+  tagihanCardWait: { backgroundColor: '#D97706' },
   tagihanLabel: { color: '#D1FAE5', fontSize: 13, fontWeight: '500' },
+  tagihanLabelDue: { color: '#FEE2E2' },
+  tagihanLabelWait: { color: '#FEF3C7' },
   tagihanAmount: { color: '#fff', fontSize: 28, fontWeight: '800', marginTop: 4, letterSpacing: -0.5 },
   tagihanSub: { color: '#A7F3D0', fontSize: 12, marginTop: 4 },
+  tagihanSubDue: { color: '#FECACA' },
+  tagihanSubWait: { color: '#FDE68A' },
   tagihanIcon: {
     width: 52,
     height: 52,

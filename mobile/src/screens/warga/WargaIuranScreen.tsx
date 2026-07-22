@@ -1,6 +1,7 @@
 // Port dari lib/pages/warga/warga_iuran_view.dart
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Icon } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,7 +10,6 @@ import { WargaCard, wargaText } from '../../components/warga/wargaUi';
 import { useToast } from '../../components/Toast';
 import {
   WargaIuranDownloadCard,
-  WargaIuranEwalletTile,
   WargaIuranHeroSection,
   WargaIuranHistoryCard,
   WargaIuranQrisCard,
@@ -51,6 +51,8 @@ export function WargaIuranScreen({ profile, rt }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggleGroup = (key: string) => setExpanded((s) => ({ ...s, [key]: !s[key] }));
 
   const load = useCallback(async () => {
     try {
@@ -77,8 +79,6 @@ export function WargaIuranScreen({ profile, rt }: Props) {
   const lastPaidLabel = paidBills.length > 0 ? iuranPeriodTitle(paidBills[0]) : '—';
 
   const vaNumber = `0089-01-005-${rt.rtNumber.replace(/\D/g, '').padStart(3, '0')}-510`;
-  const phoneDigits = profile.phone.replace(/\D/g, '');
-  const ewalletPhone = phoneDigits.length >= 10 ? phoneDigits : '081234567891';
 
   const shortDate = (d: Date | null): string =>
     d ? `${d.getDate()} ${monthLabel(d.getMonth() + 1)} ${d.getFullYear()}` : '—';
@@ -155,12 +155,6 @@ export function WargaIuranScreen({ profile, rt }: Props) {
             accountNumber={vaNumber}
             accountName={`a.n. RT ${rt.rtNumber} Kas Iuran`}
           />
-          <View style={{ height: 12 }} />
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <WargaIuranEwalletTile label="OVO" phone={ewalletPhone} icon="wallet-outline" color="#5B21B6" />
-            <WargaIuranEwalletTile label="GOPAY" phone={ewalletPhone} icon="card-outline" color="#0D9488" />
-            <WargaIuranEwalletTile label="DANA" phone={ewalletPhone} icon="phone-portrait-outline" color="#2563EB" />
-          </View>
         </WargaIuranSection>
 
         <View style={{ height: 32 }} />
@@ -177,14 +171,23 @@ export function WargaIuranScreen({ profile, rt }: Props) {
             </WargaCard>
           ) : (
             <>
-              {groupByYearMonth(bills, (b) => dateFromPeriodKey(b.periodKey)).map((g) => (
-                <View key={g.key}>
-                  <Text style={styles.monthHeader}>{g.label}</Text>
-                  {g.items.map((b) => (
-                    <WargaIuranHistoryCard key={b.id} record={b} components={rt.iuranComponents} onPay={iuranIsUnpaid(b) ? openBayar : undefined} />
-                  ))}
-                </View>
-              ))}
+              {groupByYearMonth(bills, (b) => dateFromPeriodKey(b.periodKey)).map((g) => {
+                const open = !!expanded[g.key];
+                return (
+                  <View key={g.key}>
+                    <Pressable style={styles.monthHeaderRow} onPress={() => toggleGroup(g.key)}>
+                      <Text style={styles.monthHeader}>{g.label}</Text>
+                      <View style={styles.monthHeaderRight}>
+                        {g.items.length > 1 && <Text style={styles.monthCount}>{g.items.length} pembayaran</Text>}
+                        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+                      </View>
+                    </Pressable>
+                    {open && g.items.map((b) => (
+                      <WargaIuranHistoryCard key={b.id} record={b} components={rt.iuranComponents} onPay={iuranIsUnpaid(b) ? openBayar : undefined} />
+                    ))}
+                  </View>
+                );
+              })}
               <View style={{ height: 12 }} />
               <WargaIuranTotalsCard
                 paidTotal={paidTotal}
@@ -208,5 +211,8 @@ export function WargaIuranScreen({ profile, rt }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: wargaColors.bgColor },
   scroll: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
-  monthHeader: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4, marginTop: 10, marginBottom: 8, textTransform: 'uppercase' },
+  monthHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  monthHeader: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4, textTransform: 'uppercase' },
+  monthHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  monthCount: { fontSize: 11, color: colors.textHint, fontWeight: '600' },
 });

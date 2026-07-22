@@ -72,6 +72,10 @@ export const rtService = {
       kota?: string | null;
       iuran_amount?: number;
       iuran_components?: { name: string; amount: number }[];
+      emergency_ketua_phone?: string | null;
+      emergency_bendahara_phone?: string | null;
+      emergency_security_name?: string | null;
+      emergency_security_phone?: string | null;
     },
   ): Promise<RtUnit> {
     const { data, error } = await supabase
@@ -98,6 +102,12 @@ export const rtService = {
     });
     if (error) throw error;
     return (data ?? {}) as Record<string, any>;
+  },
+
+  async regenerateInviteCode(rtId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('regenerate_invite_code', { p_rt_id: rtId });
+    if (error) throw error;
+    return String(data ?? '');
   },
 
   async joinRt(inviteCode: string): Promise<Record<string, any>> {
@@ -370,6 +380,11 @@ export const rtService = {
 
   async approveIuranAsOfficer(iuranId: string): Promise<void> {
     const { error } = await supabase.rpc('approve_iuran_as_officer', { p_iuran_id: iuranId });
+    if (error) throw error;
+  },
+
+  async rejectIuranAsOfficer(iuranId: string): Promise<void> {
+    const { error } = await supabase.rpc('reject_iuran_as_officer', { p_iuran_id: iuranId });
     if (error) throw error;
   },
 

@@ -68,6 +68,46 @@ export function parseKkAddress(text: string): string {
   return parts.join(', ');
 }
 
+// Data kepala keluarga dari KK (untuk auto-isi pendaftaran warga).
+export function parseKkHead(text: string): { name: string; nik: string } {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  let headName = '';
+  for (const line of lines) {
+    const m = line.match(
+      /NAMA\s+KEPALA\s+KELUARGA\s*:?\s*([A-Z' .]+?)(?:\s{2,}|DESA|KELURAHAN|KECAMATAN|ALAMAT|RT|$)/i,
+    );
+    if (m) {
+      headName = m[1].replace(/\s+/g, ' ').trim();
+      break;
+    }
+  }
+
+  // NIK kepala keluarga: baris anggota (punya NIK + JK/tanggal) yang namanya cocok
+  // dengan headName; kalau tak ketemu, pakai baris anggota pertama (KK = kepala di atas).
+  let headNik = '';
+  let firstNik = '';
+  for (const line of lines) {
+    const nikM = line.match(/\d{16}/);
+    if (!nikM) continue;
+    const u = line.toUpperCase();
+    if (!/LAKI-LAKI|PEREMPUAN/.test(u) && !DATE_RE.test(u)) continue;
+    if (firstNik === '') firstNik = nikM[0];
+    const before = line.slice(0, nikM.index).replace(/^\s*\d+[\s.)\-]*/, '');
+    const nameM = before.match(/[A-Za-z][A-Za-z'. ]+/);
+    const name = nameM ? nameM[0].trim().toUpperCase() : '';
+    if (headName && name && name.includes(headName.split(' ')[0].toUpperCase())) {
+      headNik = nikM[0];
+      break;
+    }
+  }
+
+  return { name: headName ? titleCase(headName) : '', nik: headNik || firstNik };
+}
+
 export function parseKkMembers(text: string): FamilyMemberInput[] {
   const lines = text
     .split(/\r?\n/)

@@ -7,9 +7,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
 import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
-import { buildLaporanKasHtml } from '../../lib/laporanKasHtml';
-import { exportHtmlAsPdf } from '../../lib/suratPdf';
+import { buildLaporanKasHtml, LaporanLine, LaporanKk } from '../../lib/laporanKasHtml';
+import { exportLongHtmlAsPdf } from '../../lib/suratPdf';
 import {
+  IuranRecord,
   KasSummary,
   KasTransaction,
   emptyKasSummary,
@@ -42,6 +43,8 @@ export default function LaporanBulananScreen({ route, navigation }: Props) {
   const toast = useToast();
   const [kas, setKas] = useState<KasSummary>(emptyKasSummary());
   const [rows, setRows] = useState<MonthRow[]>([]);
+  const [allTxs, setAllTxs] = useState<KasTransaction[]>([]);
+  const [allBills, setAllBills] = useState<IuranRecord[]>([]);
   const [ketuaName, setKetuaName] = useState(profileIsKetua(profile) ? profile.fullName : '');
   const [bendaharaName, setBendaharaName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,8 @@ export default function LaporanBulananScreen({ route, navigation }: Props) {
       rtService.getRtPengurus(rt.id).catch(() => []),
     ]);
     setKas(k);
+    setAllTxs(txs as KasTransaction[]);
+    setAllBills(bills);
     const ketua = pengurus.find(profileIsKetua);
     const bendahara = pengurus.find(profileIsBendahara);
     if (ketua) setKetuaName(ketua.fullName);
@@ -92,22 +97,80 @@ export default function LaporanBulananScreen({ route, navigation }: Props) {
 
   useEffect(() => { load(); }, [load]);
 
+  const shortDate = (d: Date) => `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
+
   const downloadPdf = async (r: MonthRow) => {
     setDownloading(r.key);
     try {
+      const [ys, ms] = r.key.split('-');
+      const Y = Number(ys);
+      const M0 = Number(ms) - 1;
+      const inMonth = (d: Date | null) => d != null && d.getFullYear() === Y && d.getMonth() === M0;
+
+      // Buku kas bulan ini
+      const monthTxs = allTxs.filter((t) => inMonth(t.createdAt));
+      const isIuranTx = (t: KasTransaction) =>
+        `${t.category ?? ''} ${t.description ?? ''}`.toLowerCase().includes('iuran');
+      const pemasukanLain: LaporanLine[] = monthTxs
+        .filter((t) => kasIsIncome(t) && !isIuranTx(t))
+        .map((t, i) => ({ no: i + 1, keterangan: t.description || 'Pemasukan lain', tgl: shortDate(t.createdAt), amount: t.amount }));
+      const pengeluaran: LaporanLine[] = monthTxs
+        .filter((t) => !kasIsIncome(t))
+        .map((t, i) => ({ no: i + 1, keterangan: t.description || 'Pengeluaran', tgl: shortDate(t.createdAt), amount: t.amount }));
+
+      // Iuran yang UANGNYA diterima bulan ini (cash basis: paid_at di bulan ini)
+      const paidInMonth = allBills.filter((b) => inMonth(b.paidAt));
+      const iuranPeriodIni: LaporanLine[] = paidInMonth
+        .filter((b) => b.periodKey === r.key)
+        .map((b, i) => ({ no: i + 1, keterangan: b.userName ?? 'Warga', tgl: b.paidAt ? shortDate(b.paidAt) : '-', amount: b.amount }));
+      const periodeLainBills = paidInMonth.filter((b) => b.periodKey !== r.key);
+      const iuranPeriodeLain: LaporanLine[] = periodeLainBills.map((b, i) => ({
+        no: i + 1,
+        keterangan: `Iuran ${b.periodLabel || b.periodKey} - ${b.userName ?? 'Warga'}`,
+        sub: b.periodLabel || b.periodKey,
+        tgl: b.paidAt ? shortDate(b.paidAt) : '-',
+        amount: b.amount,
+      }));
+      const totalIuranPeriodeLain = periodeLainBills.reduce((s, b) => s + b.amount, 0);
+
+      // Status iuran untuk periode ini
+      const periodBills = allBills.filter((b) => b.periodKey === r.key);
+      const targetIuran = periodBills.reduce((s, b) => s + b.amount, 0);
+      const realisasiIuran = periodBills.filter(iuranIsPaid).reduce((s, b) => s + b.amount, 0);
+      const belumBills = periodBills.filter((b) => !iuranIsPaid(b));
+      const kkBelum: LaporanKk[] = belumBills.map((b, i) => ({ no: i + 1, name: b.userName ?? 'Warga', amount: b.amount }));
+
+      const reconKasIuran = paidInMonth.reduce((s, b) => s + b.amount, 0);
+
       const html = buildLaporanKasHtml({
         rt,
         monthLabel: r.label,
-        masuk: r.masuk,
-        keluar: r.keluar,
-        saldo: r.saldo,
-        paid: r.paid,
-        total: r.total,
+        saldoAwal: r.saldo - r.masuk + r.keluar,
+        totalMasuk: r.masuk,
+        totalKeluar: r.keluar,
+        saldoAkhir: r.saldo,
+        iuranPeriodIni,
+        iuranPeriodeLain,
+        totalIuranPeriodeLain,
+        pemasukanLain,
+        totalPemasukanLain: pemasukanLain.reduce((s, l) => s + l.amount, 0),
+        pengeluaran,
+        totalPengeluaran: pengeluaran.reduce((s, l) => s + l.amount, 0),
+        targetIuran,
+        realisasiIuran,
+        lunasCount: periodBills.filter(iuranIsPaid).length,
+        belumCount: belumBills.length,
+        kkBelum,
+        iuranJenis: rt.iuranComponents.map((c) => c.name).filter(Boolean),
+        totalTunggakan: belumBills.reduce((s, b) => s + b.amount, 0),
+        reconPaidPeriode: realisasiIuran,
+        reconKasIuran,
+        selisih: realisasiIuran - reconKasIuran,
         ketuaName: ketuaName || profile.fullName,
         bendaharaName,
-        signatureUrl: rt.signatureUrl,
+        phone: rt.emergencyKetuaPhone,
       });
-      await exportHtmlAsPdf(html, `Laporan Kas ${r.label}`, `Laporan-Kas-${r.label}.pdf`);
+      await exportLongHtmlAsPdf(html, `Laporan Keuangan ${r.label}`, `Laporan-Keuangan-${r.label}.pdf`);
     } catch (e: any) {
       toast.error(`Gagal membuat PDF: ${String(e?.message ?? e)}`);
     } finally {

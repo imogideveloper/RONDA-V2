@@ -77,6 +77,10 @@ export default function RtSettingsScreen({ route }: Props) {
     else setComp(i, { name: opt, custom: false });
     setOpenComp(null);
   };
+  const [emgKetua, setEmgKetua] = useState(initialRt.emergencyKetuaPhone ?? profile.phone ?? '');
+  const [emgBendahara, setEmgBendahara] = useState(initialRt.emergencyBendaharaPhone ?? '');
+  const [emgSecName, setEmgSecName] = useState(initialRt.emergencySecurityName ?? '');
+  const [emgSecPhone, setEmgSecPhone] = useState(initialRt.emergencySecurityPhone ?? '');
   const [bankName, setBankName] = useState(initialRt.bankName ?? '');
   const [bankAccountName, setBankAccountName] = useState(initialRt.bankAccountName ?? '');
   const [bankAccountNumber, setBankAccountNumber] = useState(initialRt.bankAccountNumber ?? '');
@@ -154,6 +158,10 @@ export default function RtSettingsScreen({ route }: Props) {
         bank_account_number: clean(bankAccountNumber),
         iuran_components: validComps,
         iuran_amount: iuranTotal > 0 ? iuranTotal : 50000,
+        emergency_ketua_phone: clean(emgKetua),
+        emergency_bendahara_phone: clean(emgBendahara),
+        emergency_security_name: clean(emgSecName),
+        emergency_security_phone: clean(emgSecPhone),
       });
       setRt(updated);
       setKopLocal(null);
@@ -396,6 +404,23 @@ export default function RtSettingsScreen({ route }: Props) {
               onClear={() => setQrisLocal(null)}
               onRemove={() => { setQrisLocal(null); setQrisRemoved(true); }}
             />
+          </WargaCard>
+
+          {/* Kontak Darurat */}
+          <WargaCard style={{ marginBottom: 16 }}>
+            <Text style={wargaText.sectionTitle}>Kontak Darurat</Text>
+            <Text style={styles.hint}>
+              Nomor yang bisa dihubungi warga saat darurat (Ketua RT, Bendahara, Security).
+            </Text>
+            <Text style={styles.label}>Ketua RT — No. Telepon</Text>
+            <TextInput style={styles.input} value={emgKetua} onChangeText={setEmgKetua} placeholder="Contoh: 0812xxxxxxx" placeholderTextColor={colors.textHint} keyboardType="phone-pad" />
+            <Text style={styles.label}>Bendahara — No. Telepon</Text>
+            <TextInput style={styles.input} value={emgBendahara} onChangeText={setEmgBendahara} placeholder="Contoh: 0812xxxxxxx" placeholderTextColor={colors.textHint} keyboardType="phone-pad" />
+            <View style={styles.cardDivider} />
+            <Text style={styles.label}>Security / Satpam — Nama</Text>
+            <TextInput style={styles.input} value={emgSecName} onChangeText={setEmgSecName} placeholder="Contoh: Pos Satpam / Pak Budi" placeholderTextColor={colors.textHint} />
+            <Text style={styles.label}>Security / Satpam — No. Telepon</Text>
+            <TextInput style={styles.input} value={emgSecPhone} onChangeText={setEmgSecPhone} placeholder="Contoh: 0812xxxxxxx" placeholderTextColor={colors.textHint} keyboardType="phone-pad" />
           </WargaCard>
 
           <View style={{ height: 8 }} />

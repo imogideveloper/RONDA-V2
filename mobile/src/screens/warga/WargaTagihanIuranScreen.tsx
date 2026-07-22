@@ -1,6 +1,6 @@
 // Port dari lib/pages/warga/warga_tagihan_iuran_page.dart
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -233,7 +233,17 @@ export default function WargaTagihanIuranScreen({ route, navigation }: Props) {
               <View>
                 <Hero />
                 <View style={{ height: 16 }} />
-                <PaymentDetail method={method ?? 'qris'} rtLabel={rtDisplayLabel(rt)} rtName={rt.name} total={selectedTotal} />
+                <PaymentDetail
+                  method={method ?? 'qris'}
+                  rtLabel={rtDisplayLabel(rt)}
+                  rtName={rt.name}
+                  total={selectedTotal}
+                  qrisUrl={rt.qrisUrl}
+                  bankName={rt.bankName ?? 'BRI'}
+                  accountName={rt.bankAccountName ?? `${rtDisplayLabel(rt)} Kas Iuran`}
+                  rekening={rt.bankAccountNumber ?? `0089 01 005 ${rt.rtNumber.replace(/\D/g, '').padStart(3, '0')} 510`}
+                  hasBank={!!rt.bankAccountNumber}
+                />
                 <View style={{ height: 20 }} />
                 <Text style={wargaText.sectionTitle}>Upload Bukti Pembayaran</Text>
                 <Text style={[wargaText.greeting, { fontSize: 12, marginBottom: 10 }]}>
@@ -370,19 +380,86 @@ function ListStep({
   );
 }
 
-function PaymentDetail({ method, rtLabel, rtName, total }: { method: PayMethod; rtLabel: string; rtName: string; total: number }) {
+async function copyText(value: string, toast: ReturnType<typeof useToast>) {
+  try {
+    const nav = (globalThis as any).navigator;
+    if (nav?.clipboard?.writeText) await nav.clipboard.writeText(value);
+    toast.success('Nomor rekening disalin');
+  } catch {
+    toast.error('Gagal menyalin');
+  }
+}
+
+async function downloadQris(url: string, toast: ReturnType<typeof useToast>) {
+  try {
+    if (Platform.OS === 'web') {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = (globalThis as any).document.createElement('a');
+      a.href = objUrl;
+      a.download = 'QRIS.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+      toast.success('QRIS diunduh');
+    } else {
+      await Linking.openURL(url);
+    }
+  } catch {
+    toast.error('Gagal mengunduh QRIS');
+  }
+}
+
+function PaymentDetail({
+  method,
+  rtLabel,
+  rtName,
+  total,
+  qrisUrl,
+  bankName,
+  accountName,
+  rekening,
+  hasBank,
+}: {
+  method: PayMethod;
+  rtLabel: string;
+  rtName: string;
+  total: number;
+  qrisUrl?: string | null;
+  bankName: string;
+  accountName: string;
+  rekening: string;
+  hasBank: boolean;
+}) {
+  const toast = useToast();
   if (method === 'qris') {
     return (
       <WargaCard>
         <View style={{ alignItems: 'center' }}>
-          <View style={styles.qrBox}>
-            <Icon name="qr-code" size={120} color={wargaColors.primaryGreen} />
-          </View>
+          {qrisUrl ? (
+            <Image source={{ uri: qrisUrl }} style={styles.qrImg} resizeMode="contain" />
+          ) : (
+            <View style={styles.qrBox}>
+              <Icon name="qr-code" size={120} color={wargaColors.primaryGreen} />
+            </View>
+          )}
           <Text style={[wargaText.sectionTitle, { fontSize: 14, marginTop: 12 }]}>{rtLabel}</Text>
           <Text style={wargaText.greeting}>{formatRupiah(total)}</Text>
-          <Text style={[wargaText.greeting, { fontSize: 12, textAlign: 'center', marginTop: 12 }]}>
-            Scan QR lalu upload bukti pembayaran di bawah.
-          </Text>
+          {qrisUrl ? (
+            <>
+              <Pressable style={styles.qrDownloadBtn} onPress={() => downloadQris(qrisUrl, toast)}>
+                <Icon name="download-outline" size={16} color={wargaColors.primaryGreen} />
+                <Text style={styles.qrDownloadText}>Unduh QRIS</Text>
+              </Pressable>
+              <Text style={[wargaText.greeting, { fontSize: 12, textAlign: 'center', marginTop: 10 }]}>
+                Scan / unduh QRIS, lalu upload bukti pembayaran di bawah.
+              </Text>
+            </>
+          ) : (
+            <Text style={[wargaText.greeting, { fontSize: 12, textAlign: 'center', marginTop: 12 }]}>
+              QRIS belum diatur oleh Ketua RT. Gunakan metode transfer/tunai, atau minta Ketua mengunggah QRIS.
+            </Text>
+          )}
         </View>
       </WargaCard>
     );
@@ -390,18 +467,25 @@ function PaymentDetail({ method, rtLabel, rtName, total }: { method: PayMethod; 
   if (method === 'transfer') {
     return (
       <WargaCard>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ alignItems: 'center' }}>
           <View style={styles.trfIcon}>
-            <Icon name="card" size={22} color="#185FA5" />
+            <Icon name="card" size={24} color="#185FA5" />
           </View>
-          <View style={{ marginLeft: 10 }}>
-            <Text style={[wargaText.sectionTitle, { fontSize: 14 }]}>Transfer Bank BRI</Text>
-            <Text style={wargaText.greeting}>{rtName} Kas Iuran</Text>
+          <Text style={[wargaText.sectionTitle, { fontSize: 15, marginTop: 12 }]}>Transfer Bank {bankName}</Text>
+          <Text style={[wargaText.greeting, { fontSize: 12 }]}>{accountName}</Text>
+          <View style={styles.rekBox}>
+            <Text style={[wargaText.labelCaps, { textAlign: 'center' }]}>NOMOR REKENING</Text>
+            <Text style={styles.rekNumber}>{rekening}</Text>
+            <Pressable style={styles.salinBtn} onPress={() => copyText(rekening, toast)}>
+              <Icon name="copy-outline" size={16} color="#185FA5" />
+              <Text style={styles.salinText}>Salin Nomor</Text>
+            </Pressable>
           </View>
-        </View>
-        <View style={styles.rekBox}>
-          <Text style={wargaText.labelCaps}>NOMOR REKENING</Text>
-          <Text style={styles.rekNumber}>0089 0100 5003 510</Text>
+          <Text style={[wargaText.greeting, { fontSize: 12, textAlign: 'center', marginTop: 12, lineHeight: 18 }]}>
+            {hasBank
+              ? `Transfer ke rekening di atas a.n. ${accountName} via ATM, mobile/internet banking. Setelah transfer berhasil, upload bukti pembayaran.`
+              : 'Transfer ke nomor VA di atas via ATM, mobile banking, atau internet banking. Setelah transfer berhasil, upload bukti pembayaran.'}
+          </Text>
         </View>
       </WargaCard>
     );
@@ -452,8 +536,13 @@ const styles = StyleSheet.create({
   yearTotal: { flex: 1, textAlign: 'right', fontWeight: '700', color: wargaColors.dangerRed },
   successIcon: { alignSelf: 'center', width: 72, height: 72, borderRadius: 36, backgroundColor: wargaColors.lightGreen, alignItems: 'center', justifyContent: 'center' },
   qrBox: { width: 160, height: 160, backgroundColor: wargaColors.lightGreen, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  trfIcon: { padding: 8, backgroundColor: wargaColors.accentBlue, borderRadius: 10 },
-  rekBox: { marginTop: 14, padding: 14, backgroundColor: colors.background, borderRadius: 12 },
-  rekNumber: { fontSize: 18, fontWeight: '700', letterSpacing: 1.2, marginTop: 6, color: colors.textPrimary },
+  qrImg: { width: 220, height: 220, borderRadius: 12, backgroundColor: '#fff' },
+  qrDownloadBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingVertical: 9, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: wargaColors.primaryGreen, backgroundColor: wargaColors.lightGreen },
+  qrDownloadText: { color: wargaColors.primaryGreen, fontWeight: '700', fontSize: 13 },
+  trfIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: wargaColors.accentBlue, alignItems: 'center', justifyContent: 'center' },
+  rekBox: { alignSelf: 'stretch', marginTop: 16, padding: 16, backgroundColor: colors.background, borderRadius: 12, alignItems: 'center' },
+  rekNumber: { fontSize: 22, fontWeight: '800', letterSpacing: 1.5, marginTop: 8, color: colors.textPrimary, textAlign: 'center' },
+  salinBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingVertical: 9, paddingHorizontal: 18, borderRadius: 10, borderWidth: 1, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
+  salinText: { color: '#185FA5', fontWeight: '700', fontSize: 13 },
   cashCard: { padding: 16, borderRadius: 14, backgroundColor: '#FFFBEB', borderWidth: StyleSheet.hairlineWidth, borderColor: '#FDE68A' },
 });

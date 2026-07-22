@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -25,7 +26,7 @@ import { useToast } from '../../components/Toast';
 import { rtService } from '../../services/rtService';
 import { wargaDirectoryService } from '../../services/wargaDirectoryService';
 import { exportHtmlAsPdf } from '../../lib/suratPdf';
-import { extractPdfLines } from '../../lib/pdfText';
+import { extractPdfLines, renderPdfToImages } from '../../lib/pdfText';
 import { buildWargaTemplateHtml, parseWargaFromPdfText } from '../../lib/wargaImportPdf';
 import {
   WargaDirectoryEntry,
@@ -49,6 +50,8 @@ export default function DataWargaScreen({ route, navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState<WargaDirectoryEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [review, setReview] = useState<WargaDirectoryEntry | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -68,12 +71,18 @@ export default function DataWargaScreen({ route, navigation }: Props) {
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    if (q === '') return all;
-    return all.filter(
-      (m) =>
-        m.fullName.toLowerCase().includes(q) ||
-        m.phone.includes(q) ||
-        (m.email?.toLowerCase().includes(q) ?? false),
+    const base =
+      q === ''
+        ? all
+        : all.filter(
+            (m) =>
+              m.fullName.toLowerCase().includes(q) ||
+              m.phone.includes(q) ||
+              (m.email?.toLowerCase().includes(q) ?? false),
+          );
+    // Warga BARU DAFTAR (menunggu persetujuan) tampil paling atas.
+    return [...base].sort(
+      (a, b) => (directoryIsPendingApproval(a) ? 0 : 1) - (directoryIsPendingApproval(b) ? 0 : 1),
     );
   }, [all, query]);
 
@@ -95,23 +104,35 @@ export default function DataWargaScreen({ route, navigation }: Props) {
     }
   };
 
+  const openUrl = (url: string) => {
+    Linking.openURL(url).catch(() => toast.error('Tidak bisa membuka dokumen KK'));
+  };
+
   const approveWarga = async (m: WargaDirectoryEntry) => {
+    setReviewBusy(true);
     try {
       await rtService.approveWarga(m.id);
+      setReview(null);
       await load();
       toast.success(`${m.fullName} disetujui bergabung`);
     } catch (e: any) {
       toast.error(String(e?.message ?? e));
+    } finally {
+      setReviewBusy(false);
     }
   };
 
   const rejectWarga = async (m: WargaDirectoryEntry) => {
+    setReviewBusy(true);
     try {
       await rtService.rejectWarga(m.id);
+      setReview(null);
       await load();
       toast.success(`${m.fullName} ditolak`);
     } catch (e: any) {
       toast.error(String(e?.message ?? e));
+    } finally {
+      setReviewBusy(false);
     }
   };
 
@@ -210,16 +231,10 @@ export default function DataWargaScreen({ route, navigation }: Props) {
                       <Text style={styles.newBadgeText}>BARU DAFTAR</Text>
                     </View>
                   </View>
-                  <View style={styles.approveRow}>
-                    <Pressable style={[styles.appBtn, styles.rejectBtn]} onPress={() => rejectWarga(m)}>
-                      <Icon name="close-circle-outline" size={18} color={wargaColors.dangerRed} />
-                      <Text style={styles.rejectText}>Tolak</Text>
-                    </Pressable>
-                    <Pressable style={[styles.appBtn, styles.approveBtn]} onPress={() => approveWarga(m)}>
-                      <Icon name="checkmark-circle" size={18} color="#fff" />
-                      <Text style={styles.approveText}>Setujui</Text>
-                    </Pressable>
-                  </View>
+                  <Pressable style={styles.reviewBtn} onPress={() => setReview(m)}>
+                    <Icon name="document-text-outline" size={18} color="#fff" />
+                    <Text style={styles.reviewText}>Tinjau Kartu Keluarga & Putuskan</Text>
+                  </Pressable>
                 </WargaCard>
               );
             }
@@ -290,6 +305,17 @@ export default function DataWargaScreen({ route, navigation }: Props) {
           }}
         />
       )}
+
+      {review && (
+        <KkReviewModal
+          entry={review}
+          busy={reviewBusy}
+          onClose={() => setReview(null)}
+          onOpenExternal={openUrl}
+          onApprove={() => approveWarga(review)}
+          onReject={() => rejectWarga(review)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -299,6 +325,147 @@ function WargaAppBarInline({ title }: { title: string }) {
     <View style={{ flex: 1 }}>
       <WargaAppBar title={title} />
     </View>
+  );
+}
+
+// Preview KK + tombol Setujui/Tolak di dalamnya (permintaan leader).
+function KkReviewModal({
+  entry,
+  busy,
+  onClose,
+  onOpenExternal,
+  onApprove,
+  onReject,
+}: {
+  entry: WargaDirectoryEntry;
+  busy: boolean;
+  onClose: () => void;
+  onOpenExternal: (url: string) => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const kkUrl = entry.kkUrl;
+  const isPdf = !!kkUrl && kkUrl.toLowerCase().includes('.pdf');
+  // Chrome memblokir PDF via iframe/blob. Render PDF jadi gambar pakai pdf.js.
+  const [pages, setPages] = useState<string[] | null>(null);
+  const [docErr, setDocErr] = useState(false);
+  const [zoom, setZoom] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!kkUrl || Platform.OS !== 'web' || !isPdf) return;
+    let cancelled = false;
+    setPages(null);
+    setDocErr(false);
+    renderPdfToImages(kkUrl)
+      .then((imgs) => { if (!cancelled) setPages(imgs); })
+      .catch(() => { if (!cancelled) setDocErr(true); });
+    return () => { cancelled = true; };
+  }, [kkUrl, isPdf]);
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.reviewBackdrop}>
+        <View style={styles.reviewSheet}>
+          <View style={styles.reviewHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reviewName} numberOfLines={1}>{entry.fullName}</Text>
+              <Text style={styles.reviewPhone}>{entry.phone}</Text>
+            </View>
+            <Pressable onPress={onClose} hitSlop={8}>
+              <Icon name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.reviewLabel}>Kartu Keluarga</Text>
+          <View style={styles.reviewDocBox}>
+            {!kkUrl ? (
+              <View style={styles.reviewEmpty}>
+                <Icon name="document-outline" size={40} color={colors.textHint} />
+                <Text style={styles.reviewEmptyText}>Warga belum melampirkan KK.</Text>
+              </View>
+            ) : !isPdf ? (
+              // Gambar (JPG/PNG) bisa langsung ditampilkan.
+              <Image source={{ uri: kkUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+            ) : Platform.OS !== 'web' ? (
+              <Pressable style={styles.reviewEmpty} onPress={() => onOpenExternal(kkUrl)}>
+                <Icon name="document-text-outline" size={40} color="#2563EB" />
+                <Text style={[styles.reviewEmptyText, { color: '#2563EB', fontWeight: '700' }]}>Buka dokumen KK (PDF)</Text>
+              </Pressable>
+            ) : docErr ? (
+              <Pressable style={styles.reviewEmpty} onPress={() => onOpenExternal(kkUrl)}>
+                <Icon name="document-text-outline" size={40} color="#2563EB" />
+                <Text style={[styles.reviewEmptyText, { color: '#2563EB', fontWeight: '700' }]}>Gagal render — buka dokumen KK</Text>
+              </Pressable>
+            ) : !pages ? (
+              <View style={styles.reviewEmpty}>
+                <ActivityIndicator color={colors.emerald} />
+                <Text style={styles.reviewEmptyText}>Memuat dokumen…</Text>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={{ padding: 6, gap: 6 }}>
+                {pages.map((src, i) => (
+                  <Pressable key={i} onPress={() => setZoom(src)}>
+                    <Image source={{ uri: src }} style={styles.reviewPageImg} resizeMode="contain" />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+          {isPdf && pages && pages.length > 0 && (
+            <Text style={styles.reviewHint}>Ketuk gambar untuk perbesar</Text>
+          )}
+
+          {kkUrl && (
+            <Pressable style={styles.reviewOpenLink} onPress={() => onOpenExternal(kkUrl)}>
+              <Icon name="open-outline" size={15} color="#2563EB" />
+              <Text style={styles.reviewOpenText}>Buka di tab baru</Text>
+            </Pressable>
+          )}
+
+          <View style={styles.reviewActions}>
+            <Pressable style={[styles.appBtn, styles.rejectBtn, busy && { opacity: 0.5 }]} disabled={busy} onPress={onReject}>
+              <Icon name="close-circle-outline" size={18} color={wargaColors.dangerRed} />
+              <Text style={styles.rejectText}>Tolak</Text>
+            </Pressable>
+            <Pressable style={[styles.appBtn, styles.approveBtn, busy && { opacity: 0.5 }]} disabled={busy} onPress={onApprove}>
+              {busy ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Icon name="checkmark-circle" size={18} color="#fff" />
+                  <Text style={styles.approveText}>Setujui</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {/* Zoom fullscreen: ketuk untuk perbesar & baca detail KK */}
+      {zoom && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setZoom(null)}>
+          <View style={styles.zoomBackdrop}>
+            <Pressable style={styles.zoomClose} onPress={() => setZoom(null)} hitSlop={10}>
+              <Icon name="close" size={26} color="#fff" />
+            </Pressable>
+            {Platform.OS === 'web' ? (
+              // Kontainer scroll web asli → bisa geser kiri-kanan & atas-bawah.
+              // @ts-ignore
+              <div style={{ width: '100%', height: '100%', overflow: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', padding: '56px 12px' }}>
+                {/* @ts-ignore */}
+                <img src={zoom} style={{ width: 1400, maxWidth: 'none', height: 'auto', margin: 'auto', background: '#fff' }} />
+              </div>
+            ) : (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.zoomScroll} maximumZoomScale={4} minimumZoomScale={1}>
+                <ScrollView horizontal>
+                  <Image source={{ uri: zoom }} style={styles.zoomImg} resizeMode="contain" />
+                </ScrollView>
+              </ScrollView>
+            )}
+          </View>
+        </Modal>
+      )}
+    </Modal>
   );
 }
 
@@ -414,8 +581,27 @@ const styles = StyleSheet.create({
   pendingCard: { marginBottom: 10, padding: 14, borderWidth: 1, borderColor: '#FDE68A', backgroundColor: '#FFFBEB' },
   newBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#FEF3C7' },
   newBadgeText: { fontSize: 9, fontWeight: '700', color: '#B45309', letterSpacing: 0.3 },
-  approveRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  appBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 42, borderRadius: 10 },
+  reviewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, paddingVertical: 12, borderRadius: 10, backgroundColor: wargaColors.primaryGreen },
+  reviewText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  reviewBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  reviewSheet: { width: '100%', maxWidth: 460, maxHeight: '90%', backgroundColor: colors.surface, borderRadius: 18, padding: 18 },
+  reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  reviewName: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  reviewPhone: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
+  reviewLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
+  reviewDocBox: { height: 300, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: '#F8FAFC', overflow: 'hidden' },
+  reviewPageImg: { width: '100%', aspectRatio: 1.414, backgroundColor: '#fff', borderRadius: 6 },
+  reviewHint: { fontSize: 11, color: colors.textHint, textAlign: 'center', marginTop: 6, fontStyle: 'italic' },
+  zoomBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
+  zoomClose: { position: 'absolute', top: 40, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  zoomScroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 60 },
+  zoomImg: { width: 1400, aspectRatio: 1.414, backgroundColor: '#fff' },
+  reviewEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  reviewEmptyText: { fontSize: 13, color: colors.textHint, fontStyle: 'italic' },
+  reviewOpenLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 },
+  reviewOpenText: { color: '#2563EB', fontWeight: '600', fontSize: 12 },
+  reviewActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  appBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 46, borderRadius: 10 },
   rejectBtn: { borderWidth: 1, borderColor: wargaColors.dangerRed },
   rejectText: { color: wargaColors.dangerRed, fontWeight: '700' },
   approveBtn: { backgroundColor: wargaColors.primaryGreen },

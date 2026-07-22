@@ -1,7 +1,7 @@
 // Port dari lib/pages/warga/warga_profil_view.dart
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { alertDialog, confirmDialog } from '../../lib/dialog';
+import { confirmDialog } from '../../lib/dialog';
 import { Icon, type IconName } from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, formatRupiah, wargaColors } from '../../config/theme';
@@ -91,16 +91,6 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
       toast.error(String(e?.message ?? 'Gagal beralih RT'));
     }
   };
-
-  const showHelp = () =>
-    alertDialog(
-      'Panduan Warga',
-      '• Beranda: ringkasan iuran, pengumuman, aksi cepat.\n' +
-        '• Iuran: bayar tagihan bulanan (demo QRIS).\n' +
-        '• Info: baca pengumuman RT.\n' +
-        '• Profil: kelola keanggotaan RT & ajukan surat.\n\n' +
-        'Punya rumah di 2 RT? Gunakan "Gabung RT Lain" dengan kode undangan Ketua RT.',
-    );
 
   const confirmLogout = () =>
     confirmDialog('Keluar?', 'Anda akan keluar dari aplikasi.', onLogout, 'Keluar');
@@ -211,15 +201,6 @@ export function WargaProfilScreen({ profile: initialProfile, rt, onLogout, onPro
           ))
         )}
         <Text style={styles.italic}>Iuran dihitung terpisah untuk setiap RT</Text>
-
-        <WargaMenuTile
-          icon="help-circle"
-          iconBg={wargaColors.accentBlue}
-          iconColor="#185FA5"
-          title="Bantuan"
-          subtitle="FAQ dan panduan penggunaan"
-          onTap={showHelp}
-        />
 
         <View style={{ height: 20 }} />
         <Pressable onPress={confirmLogout} style={styles.logout}>

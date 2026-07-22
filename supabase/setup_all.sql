@@ -2432,3 +2432,139 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.ketua_approve_warga TO authenticated;
 GRANT EXECUTE ON FUNCTION public.ketua_reject_warga TO authenticated;
+-- 024_kk_document.sql
+-- Dokumen Kartu Keluarga (PDF) yang diunggah warga saat daftar.
+-- Dipakai auto-isi data + preview oleh Ketua RT saat menyetujui warga baru.
+
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS kk_url TEXT;
+
+-- Bucket publik untuk PDF KK (path: {user_id}/kk.pdf).
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'kk-docs',
+  'kk-docs',
+  true,
+  10485760,
+  ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "kk_docs_public_read" ON storage.objects;
+DROP POLICY IF EXISTS "kk_docs_owner_insert" ON storage.objects;
+DROP POLICY IF EXISTS "kk_docs_owner_update" ON storage.objects;
+DROP POLICY IF EXISTS "kk_docs_owner_delete" ON storage.objects;
+
+CREATE POLICY "kk_docs_public_read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'kk-docs');
+
+CREATE POLICY "kk_docs_owner_insert" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'kk-docs' AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "kk_docs_owner_update" ON storage.objects
+  FOR UPDATE USING (
+    bucket_id = 'kk-docs' AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "kk_docs_owner_delete" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'kk-docs' AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 025: regenerate_invite_code (Ketua ganti kode undangan)
+-- ═══════════════════════════════════════════════════════════════
+-- 025: Ketua RT bisa mengganti (regenerate) kode undangan RT bila bocor.
+-- Memakai generate_invite_code() yang sudah ada (acak 6 char, unik per-RT).
+
+CREATE OR REPLACE FUNCTION public.regenerate_invite_code(p_rt_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_code TEXT;
+  v_ketua UUID;
+BEGIN
+  SELECT ketua_id INTO v_ketua FROM public.rt_units WHERE id = p_rt_id;
+  IF v_ketua IS NULL THEN
+    RAISE EXCEPTION 'RT tidak ditemukan';
+  END IF;
+  IF v_ketua <> auth.uid() THEN
+    RAISE EXCEPTION 'Hanya Ketua RT yang bisa mengganti kode undangan';
+  END IF;
+
+  -- ulang sampai dapat kode yang belum dipakai RT lain
+  LOOP
+    v_code := public.generate_invite_code();
+    EXIT WHEN NOT EXISTS (SELECT 1 FROM public.rt_units WHERE invite_code = v_code);
+  END LOOP;
+
+  UPDATE public.rt_units SET invite_code = v_code WHERE id = p_rt_id;
+  RETURN v_code;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.regenerate_invite_code TO authenticated;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 026: kontak darurat RT
+-- ═══════════════════════════════════════════════════════════════
+-- 026: Kontak darurat RT (diisi Ketua RT) — Ketua/Bendahara/Security + telepon.
+ALTER TABLE public.rt_units
+  ADD COLUMN IF NOT EXISTS emergency_ketua_phone     TEXT,
+  ADD COLUMN IF NOT EXISTS emergency_bendahara_phone TEXT,
+  ADD COLUMN IF NOT EXISTS emergency_security_name   TEXT,
+  ADD COLUMN IF NOT EXISTS emergency_security_phone  TEXT;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 027: reject_iuran_as_officer (tolak bukti bayar iuran)
+-- ═══════════════════════════════════════════════════════════════
+-- 027: Ketua/Bendahara bisa MENOLAK bukti pembayaran iuran (kembalikan ke pending).
+CREATE OR REPLACE FUNCTION public.reject_iuran_as_officer(p_iuran_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_officer UUID := auth.uid();
+  v_officer_rec public.profiles%ROWTYPE;
+  v_row public.iuran_records%ROWTYPE;
+BEGIN
+  IF v_officer IS NULL THEN RAISE EXCEPTION 'Unauthorized'; END IF;
+
+  SELECT * INTO v_officer_rec FROM public.profiles WHERE id = v_officer;
+  IF v_officer_rec.role NOT IN ('ketua_rt', 'bendahara') THEN
+    RAISE EXCEPTION 'Hanya Ketua RT atau Bendahara yang bisa memverifikasi iuran';
+  END IF;
+
+  SELECT * INTO v_row FROM public.iuran_records WHERE id = p_iuran_id FOR UPDATE;
+  IF v_row IS NULL OR v_row.rt_id != v_officer_rec.rt_id THEN
+    RAISE EXCEPTION 'Tagihan tidak ditemukan di RT Anda';
+  END IF;
+
+  IF v_row.status <> 'awaiting_verification' THEN
+    RAISE EXCEPTION 'Hanya pembayaran yang menunggu verifikasi yang bisa ditolak';
+  END IF;
+
+  -- Kembalikan ke belum bayar; hapus bukti agar warga bisa unggah ulang.
+  UPDATE public.iuran_records
+  SET status = 'pending', payment_proof_url = NULL, payment_method = NULL,
+      paid_at = NULL, submitted_at = NULL
+  WHERE id = p_iuran_id;
+
+  RETURN json_build_object('status', 'pending', 'iuran_id', p_iuran_id);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.reject_iuran_as_officer TO authenticated;

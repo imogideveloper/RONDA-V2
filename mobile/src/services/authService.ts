@@ -131,6 +131,23 @@ export const authService = {
     await supabase.auth.updateUser({ data: payload });
   },
 
+  /** Simpan data hasil scan KK ke profil sendiri (saat daftar). */
+  async saveMyKkData(data: { kkUrl?: string; address?: string; nik?: string; avatarUrl?: string }): Promise<void> {
+    const user = await this.currentUser();
+    if (user == null) return;
+    const clean = (s?: string) => (s && s.trim() !== '' ? s.trim() : null);
+    const payload: Record<string, any> = {};
+    if (data.kkUrl != null) payload.kk_url = data.kkUrl;
+    if (data.avatarUrl != null) payload.avatar_url = data.avatarUrl;
+    if (data.address !== undefined) payload.address = clean(data.address);
+    if (data.nik !== undefined) payload.nik = clean(data.nik);
+    if (Object.keys(payload).length === 0) return;
+    await supabase.from('profiles').update(payload).eq('id', user.id);
+    if (payload.avatar_url != null) {
+      await supabase.auth.updateUser({ data: { avatar_url: payload.avatar_url } });
+    }
+  },
+
   async getProfile(): Promise<Profile | null> {
     lastProfileError = null;
     const user = await this.currentUser();

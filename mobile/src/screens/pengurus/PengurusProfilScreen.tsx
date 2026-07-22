@@ -32,7 +32,28 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
   const [editing, setEditing] = useState(false);
   const [saldo, setSaldo] = useState<number | null>(null);
   const [totalWarga, setTotalWarga] = useState<number | null>(null);
+  const [inviteCode, setInviteCode] = useState(rt.inviteCode);
+  const [regenBusy, setRegenBusy] = useState(false);
   const canManage = profileIsKetua(profile) || profileIsBendahara(profile);
+
+  const regenerateCode = () =>
+    confirmDialog(
+      'Ganti kode undangan?',
+      'Kode lama akan langsung tidak berlaku. Warga yang belum bergabung harus memakai kode baru.',
+      async () => {
+        setRegenBusy(true);
+        try {
+          const code = await rtService.regenerateInviteCode(rt.id);
+          setInviteCode(code);
+          toast.success('Kode undangan diperbarui');
+        } catch (e: any) {
+          toast.error(String(e?.message ?? e));
+        } finally {
+          setRegenBusy(false);
+        }
+      },
+      'Ganti kode',
+    );
 
   useEffect(() => {
     (async () => {
@@ -153,14 +174,28 @@ export function PengurusProfilScreen({ profile: initialProfile, rt, onLogout, on
           <View style={styles.inviteCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.inviteLabel}>Kode undangan RT</Text>
-              <Text style={styles.inviteCode}>{rt.inviteCode}</Text>
+              <Text style={styles.inviteCode}>{inviteCode}</Text>
             </View>
+            <Pressable
+              hitSlop={8}
+              disabled={regenBusy}
+              style={[styles.copyBtn, regenBusy && { opacity: 0.5 }]}
+              onPress={regenerateCode}
+            >
+              <Icon name="refresh" size={18} color={wargaColors.primaryGreen} />
+            </Pressable>
             <Pressable
               hitSlop={8}
               style={styles.copyBtn}
               onPress={async () => {
-                await Clipboard.setStringAsync(rt.inviteCode);
-                toast.success('Kode disalin');
+                try {
+                  const nav = (globalThis as any).navigator;
+                  if (nav?.clipboard?.writeText) await nav.clipboard.writeText(inviteCode);
+                  else await Clipboard.setStringAsync(inviteCode);
+                } catch {
+                  await Clipboard.setStringAsync(inviteCode);
+                }
+                toast.success('Kode berhasil disalin');
               }}
             >
               <Icon name="copy-outline" size={18} color={wargaColors.primaryGreen} />
@@ -290,6 +325,7 @@ const styles = StyleSheet.create({
   inviteCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
